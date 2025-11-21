@@ -1,15 +1,102 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-}
+@layer components {
+  /* --- Layout Containers --- */
+  .container-main {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+  .page-wrapper {
+    @apply min-h-screen bg-gray-50 font-sans antialiased text-gray-900;
+  }
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+  /* --- Hero Sections --- */
+  .hero-section {
+    @apply bg-[#0F2E6A] text-white py-16 relative z-10;
+  }
+
+  .hero-title-large {
+    @apply text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-center;
+  }
+
+  .hero-subtitle {
+    @apply text-xl md:text-2xl text-gray-300 font-medium max-w-2xl mx-auto text-center;
+  }
+
+  .hero-section-light {
+    @apply bg-[#C3E3F6] border-t border-b border-blue-200 py-12 md:py-20 relative z-10;
+  }
+
+  /* --- Buttons --- */
+  .btn-tag {
+    @apply px-4 py-2 text-sm rounded-full bg-[#0F2E6A] border-2 border-[#EDB920] text-gray-200 hover:border-white hover:text-white transition-colors duration-200 whitespace-nowrap;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg shadow-lg text-slate-900 bg-yellow-400 hover:bg-yellow-500 transition duration-300 transform hover:scale-[1.02];
+  }
+
+  .btn-back {
+    @apply flex items-center text-[#0F2E6A] font-medium mb-6 hover:text-indigo-900 transition-colors;
+  }
+
+  .btn-icon-circle {
+    @apply p-2 bg-[#192E56] rounded-full hover:bg-[#EDB920] hover:text-[#0F2E6A] transition-all duration-300 border border-gray-600 hover:border-transparent text-white;
+  }
+
+  .btn-scroll-top {
+    @apply p-3 bg-[#0F2E6A] text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200;
+  }
+
+  /* --- Cards --- */
+  .card-resource {
+    @apply relative p-6 bg-[#192E56] rounded-lg shadow-xl text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl h-full block;
+  }
+
+  .card-feature {
+    @apply bg-white p-6 rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-[#EDB920];
+  }
+
+  .card-department {
+    @apply bg-[#192E56] rounded-xl shadow-xl overflow-hidden border border-gray-700 text-gray-100 hover:scale-[1.01] transition-transform duration-300;
+  }
+
+  .card-header-dark {
+    @apply p-6 border-b border-gray-600 bg-[#142444] flex items-center gap-3;
+  }
+
+  /* --- Navigation / Header --- */
+  .nav-sticky-header {
+    @apply sticky top-0 bg-white shadow-sm z-50;
+  }
+
+  .nav-link {
+    @apply flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors;
+  }
+
+  .nav-sidebar {
+    @apply fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto;
+  }
+
+  /* --- Typography & Lists --- */
+  .section-heading {
+    @apply text-3xl font-extrabold text-[#192E56] mb-10 text-center md:text-left;
+  }
+
+  .list-bullet-custom {
+    @apply flex items-start text-gray-700;
+  }
+
+  .bullet-point {
+    @apply text-[#0F2E6A] mr-2 text-xl leading-none font-bold;
+  }
+  
+  /* --- Search Bar --- */
+  .search-container {
+    @apply w-full max-w-2xl flex items-center bg-white rounded-full p-2 shadow-xl;
+  }
+  
+  .search-input {
+    @apply w-full bg-transparent border-none focus:ring-0 p-2 text-gray-800 placeholder-gray-500 text-lg outline-none;
   }
 }

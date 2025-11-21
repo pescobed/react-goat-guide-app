@@ -6,10 +6,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
-import { Menu, X, Home, BookOpen, Search } from 'lucide-react';
+import { Menu, X, Home, BookOpen, Search, ChevronDown, Building2 } from 'lucide-react';
 
-import { useState } from "react";
+import { use, useState } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -46,9 +47,41 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDepartmentsOpen, setIsDepartmentsOpen] = useState(false); // New state for dropdown
+
+  const location = useLocation();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+  
+  const toggleDepartments = () => setIsDepartmentsOpen(!isDepartmentsOpen);
+
+  // List of Departments
+  const departments = [
+    "Institutional Effectiveness and Tech (IET)",
+    "Academic Exploration and Success",
+    "Academic Initiatives Success",
+    "Advancement",
+    "Athletics",
+    "Campus Ministry",
+    "Campus Safety",
+    "Career and Professional Development",
+    "Dean of Students",
+    "Financial Services",
+    "HHC",
+    "Mary Moody Northern Theater",
+    "Munday Library",
+    "Operations",
+    "Recreation and Wellness",
+    "Registrar Office",
+    "ResLife",
+    "Steds schools",
+    "Student Involvement",
+    "Wild Basin"
+  ];
+
+  // Helper to create URL slugs (e.g. "Campus Safety" -> "campus-safety")
+  const createSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,18 +93,21 @@ export default function App() {
           
           {/* Logo - Clickable to go Home */}
           <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-             {/* You can add a small logo img here if you want */}
             <h1 className="text-xl font-bold text-gray-800">The GOAT Guide</h1>
           </Link>
 
           {/* Right Side Icons */}
           <div className="flex items-center gap-4">
-            {/* Search Icon (Optional here) */}
-            <button className="text-gray-600 hover:text-gray-900">
-               <Search className="w-5 h-5" />
-            </button>
+            {location.pathname !== "/" && (
+              <Link 
+                to="/" // Clicking this takes you back to the Home page to search
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+                aria-label="Go to Search"
+              >
+                 <Search className="w-5 h-5" />
+              </Link>
+            )}
 
-            {/* Hamburger Menu Button */}
             <button 
               onClick={toggleMenu} 
               aria-label="Open Menu"
@@ -90,12 +126,12 @@ export default function App() {
       {isMenuOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
-          onClick={closeMenu} // Click outside to close
+          onClick={closeMenu} 
         />
       )}
 
       {/* Slide-out Sidebar */}
-      <div className={`fixed top-0 right-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'} overflow-y-auto`}>
         <div className="p-5">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-lg font-bold text-gray-800">Menu</h2>
@@ -104,26 +140,60 @@ export default function App() {
             </button>
           </div>
 
-          <nav className="flex flex-col space-y-4">
+          <nav className="flex flex-col space-y-2">
+            {/* Home Link */}
             <Link 
               to="/" 
               onClick={closeMenu}
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-2 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors"
             >
               <Home className="w-5 h-5" />
               <span>Home</span>
             </Link>
 
+            {/* About Link */}
             <Link 
               to="/about" 
               onClick={closeMenu}
-              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-2 hover:bg-blue-50 rounded-lg transition-colors"
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors"
             >
               <BookOpen className="w-5 h-5" />
               <span>About the Guide</span>
             </Link>
-            
-            {/* Add more links here later! */}
+
+            {/* DEPARTMENTS DROPDOWN */}
+            <div>
+              <button 
+                onClick={toggleDepartments}
+                className="w-full flex items-center justify-between text-gray-700 hover:text-blue-600 font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center space-x-3">
+                  <Building2 className="w-5 h-5" />
+                  <span>Departments</span>
+                </div>
+                <ChevronDown 
+                  className={`w-4 h-4 transition-transform duration-200 ${isDepartmentsOpen ? 'rotate-180' : ''}`} 
+                />
+              </button>
+
+              {/* Dropdown List */}
+              {isDepartmentsOpen && (
+                <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
+                  {departments.map((dept, index) => (
+                    <Link
+                      key={index}
+                      // Links to /department/athletics, /department/reslife, etc.
+                      to={`/department/${createSlug(dept)}`}
+                      onClick={closeMenu}
+                      className="block px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                    >
+                      {dept}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </nav>
         </div>
       </div>

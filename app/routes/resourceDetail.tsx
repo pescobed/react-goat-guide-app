@@ -10,7 +10,7 @@ export function meta() {
 }
 
 interface ContactItem {
-  icon: React.ElementType; // Icon component from lucide-react
+  icon: React.ElementType;
   label: string;
   value: string;
   link?: string;
@@ -57,7 +57,7 @@ const mockResourceDatabase: Record<string, ResourceDetailData> = {
     ],
     contactInfo: [
         { icon: Mail, label: "Contact", value: "huddle@stedwards.edu", link: "mailto:huddle@stedwards.edu" },
-        { icon: MapPin, label: "Location", value: "Ragsdale Center, Room TBD" },
+        { icon: MapPin, label: "Location", value: "ground floor of Le Mans Hal" },
     ],
     tags: ["Food Support", "Wellness", "Essentials"],
     scheduleLink: "#", // No scheduling, but for demonstration
@@ -112,7 +112,7 @@ const ResourceDetail: React.FC = () => {
       </style>
 
       {/* Hero Section (Light Blue Banner with Title) */}
-      <div className="bg-[#C3E3F6] border-t border-b border-blue-200 py-12 md:py-20 relative z-10">
+      <div className="bg-[#C3E3F6] border-t pt-15 border-b border-blue-200 py-12 md:py-20 relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           
           {/* Back Button */}
