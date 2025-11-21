@@ -1,5 +1,7 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/home";
-import { Search, ChevronUp, BookOpen, Users, FlaskConical, GraduationCap, BrainCircuit, HeartPulse, Palette, Lightbulb } from 'lucide-react'; // Importing icons
+import { Search, ChevronUp } from 'lucide-react'; 
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,31 +12,41 @@ export function meta({}: Route.MetaArgs) {
 
 interface TagButtonProps {
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
 interface ResourceCardProps {
   title: string;
   description: string;
   colorClass: string;
+  linkTo: string;
 }
 
 // Reusable Components
-const TagButton: React.FC<TagButtonProps> = ({ children }) => (
-  <button className="px-4 py-2 text-sm rounded-full border border-gray-400 text-gray-200 hover:border-white hover:text-white transition-colors duration-200 whitespace-nowrap">
+const TagButton: React.FC<TagButtonProps> = ({ children, onClick }) => (
+  <button 
+    onClick={onClick}
+    className="px-4 py-2 text-sm rounded-full bg-[#0F2E6A] border-2 border-[#EDB920] text-gray-200 hover:border-white hover:text-white transition-colors duration-200 whitespace-nowrap"
+  >
     {children}
   </button>
 );
 
-const ResourceCard: React.FC<ResourceCardProps> = ({ title, description, colorClass }) => (
-  <div className={`relative p-6 bg-slate-800 rounded-lg shadow-xl text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl`}>
-    {/* Colored top border effect */}
-    <div className={`absolute top-0 left-0 w-full h-1 ${colorClass}`}></div>
-    <h3 className="text-xl font-semibold mb-2">{title}</h3>
-    <p className="text-sm text-gray-300">{description}</p>
-  </div>
+const ResourceCard: React.FC<ResourceCardProps> = ({ title, description, colorClass, linkTo }) => (
+  <Link to={linkTo} className="block">
+    <div className={`relative p-6 bg-[#192E56] rounded-lg shadow-xl text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl h-full`}>
+      {/* Colored top border effect */}
+      <div className={`absolute top-0 left-0 w-full h-1 ${colorClass}`}></div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-gray-300">{description}</p>
+    </div>
+  </Link>
 );
 
 export default function Home() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
   const tags = [
     "Physical Wellness", "Rec Well", "Exercise", "Academic", "Tutoring",
     "Emotional Wellness", "Career", "Parking", "Mental Health", "Therapy",
@@ -43,15 +55,55 @@ export default function Home() {
   ];
 
   const popularResources = [
-    { title: "The Writing Center", description: "Personalized writing support", color: "bg-yellow-500" },
-    { title: "The Huddle", description: "Free food, clothes, and other essentials", color: "bg-blue-500" },
-    { title: "Wellness Kits", description: "Free wellness kits for your needs", color: "bg-emerald-500" },
-    { title: "Counseling", description: "Learn about counseling services", color: "bg-purple-500" },
-    { title: "The Math Lab", description: "Free math tutoring", color: "bg-orange-500" },
-    { title: "Research Assistance", description: "Get help with your research", color: "bg-rose-500" },
-    { title: "Computer Labs", description: "Find locations with computer access", color: "bg-cyan-500" },
-    { title: "SafeWalk SEU", description: "Get around campus safely", color: "bg-pink-500" },
+    { title: "The Writing Center", description: "Personalized writing support", color: "bg-yellow-500", slug: "the-writing-center" },
+    { title: "The Huddle", description: "Free food, clothes, and other essentials", color: "bg-blue-500", slug: "the-huddle" },
+    { title: "Wellness Kits", description: "Free wellness kits for your needs", color: "bg-emerald-500", slug: "wellness-kits" },
+    { title: "Counseling", description: "Learn about counseling services", color: "bg-purple-500", slug: "counseling" },
+    { title: "The Math Lab", description: "Free math tutoring", color: "bg-orange-500", slug: "the-math-lab" },
+    { title: "Research Assistance", description: "Get help with your research", color: "bg-rose-500", slug: "research-assistance" },
+    { title: "Computer Labs", description: "Find locations with computer access", color: "bg-cyan-500", slug: "computer-labs" },
+    { title: "SafeWalk SEU", description: "Get around campus safely", color: "bg-pink-500", slug: "safewalk-seu" },
   ];
+
+  // ---------------------------------------------------------
+  // 1. DEFINE WHERE TAGS SHOULD GO
+  // ---------------------------------------------------------
+  const tagDestinations: Record<string, string> = {
+    // These tags go to The Writing Center
+    "Academic": "/resource/the-writing-center",
+    "Tutoring": "/resource/the-writing-center",
+    "Writing": "/resource/the-writing-center",
+    "Library": "/resource/the-writing-center",
+    
+    // These go to The Huddle
+    "Food Support": "/resource/the-huddle",
+    "The Huddle": "/resource/the-huddle",
+  };
+
+  // ---------------------------------------------------------
+  // 2. HANDLE THE CLICK
+  // ---------------------------------------------------------
+  const handleTagClick = (tag: string) => {
+    // Check if this tag has a specific destination page
+    const destination = tagDestinations[tag];
+
+    if (destination) {
+      // If it exists in our list, go to that page
+      navigate(destination);
+    } else {
+      // If NOT in the list (like "Parking"), just filter the home page
+      setSearchQuery(tag);
+    }
+  };
+
+  const filteredTags = tags.filter(tag =>
+    tag.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredResources = popularResources.filter(resource => 
+    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    resource.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Function to scroll to the top of the page
   const scrollToTop = () => {
@@ -88,12 +140,8 @@ export default function Home() {
       </style>
 
       {/* Hero Section (Dark Blue Background) */}
-      <div className="bg-slate-900 text-white pb-20 pt-8 relative z-10">
+      <div className="bg-[#0F2E6A] text-white pb-20 pt-8 relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Top Left Logo/Header */}
-          <header className="mb-12">
-            <h1 className="text-xl font-bold">The GOAT Guide</h1>
-          </header>
 
           {/* Main Hero Content - Centered */}
           <main className="text-center mb-16">
@@ -108,6 +156,8 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="What are you looking for?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent border-none focus:ring-0 p-2 text-gray-800 placeholder-gray-500 text-lg"
                 />
                 <button aria-label="Search" className="p-3 text-gray-600 hover:text-gray-900 transition-colors">
@@ -120,9 +170,13 @@ export default function Home() {
           {/* Tag Buttons Section */}
           <section className="mt-12">
             <div className="flex flex-wrap justify-center gap-3">
-              {tags.map((tag, index) => (
-                <TagButton key={index}>{tag}</TagButton>
-              ))}
+              {filteredTags.length > 0 ? ( filteredTags.map((tag, index) => (
+                <TagButton key={index} onClick={() => handleTagClick(tag)}>
+                  {tag}
+                </TagButton>
+              ))) : (
+              <p className="text-gray-400 italic">No tags match your search.</p>
+              )}
             </div>
           </section>
         </div>
@@ -131,32 +185,49 @@ export default function Home() {
       {/* "Explore Popular Resources" Section (White Background) */}
       <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 relative z-0">
         <div className="mx-auto max-w-7xl">
-          <h4 className="text-3xl font-extrabold text-gray-900 mb-10 text-center md:text-left">
-            Explore Popular Resources
+          <h4 className="text-3xl font-extrabold text-[#192E56] mb-10 text-center md:text-left">
+            {searchQuery ? `Results for "${searchQuery}"` : "Explore Popular Resources"}
           </h4>
 
           {/* Resource Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {popularResources.map((resource, index) => (
-              <ResourceCard
-                key={index}
-                title={resource.title}
-                description={resource.description}
-                colorClass={resource.color} // Pass the Tailwind color class
-              />
-            ))}
-          </div>
+          {filteredResources.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredResources.map((resource, index) => (
+                <ResourceCard
+                  key={index}
+                  title={resource.title}
+                  description={resource.description}
+                  colorClass={resource.color}
+                  linkTo={`/resource/${resource.slug}`}
+                />
+              ))}
+            </div>
+          ) : (
+            // Fallback if no resources found
+            <div className="text-center py-10">
+               <p className="text-xl text-gray-600">No resources found matching "{searchQuery}".</p>
+               <button
+                 onClick={() => setSearchQuery("")}
+                 className="mt-4 text-blue-600 underline hover:text-blue-800"
+               >
+                 Clear Search
+               </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* "Not sure where to start?" Sticky Footer */}
-      <footer className="sticky bottom-0 bg-blue-100 py-4 text-blue-800 text-center text-lg font-medium shadow-md border-t border-blue-200 z-20">
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <p>Not sure where to start?</p>
-          <p className="text-base text-blue-700">Use the tags at the top to find resources that match your needs</p>
+      {/* Sticky Footer */}
+      <footer className=" bg-[#C3E3F6] py-4 text-[#000000] shadow-md border-t border-blue-200 z-20">
+        <div className="mx-auto max-w-7xl px-4 flex justify-between items-center">
+          <div className="text-left">
+            <p className="text-lg font-bold">Not sure where to start?</p>
+            <p className="text-2 font-medium text-[#000000]">Use the tags at the top to find resources that match your needs</p>
+          </div>
+
           <button
             onClick={scrollToTop}
-            className="mt-3 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200"
+            className="p-3 bg-[#0F2E6A] text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200"
             aria-label="Scroll to top"
           >
             <ChevronUp className="w-6 h-6" />

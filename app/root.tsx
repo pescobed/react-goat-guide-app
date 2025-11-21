@@ -1,12 +1,15 @@
 import {
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { Menu, X, Home, BookOpen, Search } from 'lucide-react';
 
+import { useState } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -42,7 +45,97 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* ------------------------
+          GLOBAL STICKY HEADER
+      ------------------------ */}
+      <header className="sticky top-0 bg-white shadow-sm z-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+          
+          {/* Logo - Clickable to go Home */}
+          <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
+             {/* You can add a small logo img here if you want */}
+            <h1 className="text-xl font-bold text-gray-800">The GOAT Guide</h1>
+          </Link>
+
+          {/* Right Side Icons */}
+          <div className="flex items-center gap-4">
+            {/* Search Icon (Optional here) */}
+            <button className="text-gray-600 hover:text-gray-900">
+               <Search className="w-5 h-5" />
+            </button>
+
+            {/* Hamburger Menu Button */}
+            <button 
+              onClick={toggleMenu} 
+              aria-label="Open Menu"
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ------------------------
+          SLIDE-OUT MENU OVERLAY
+      ------------------------ */}
+      {/* Dark background overlay */}
+      {isMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
+          onClick={closeMenu} // Click outside to close
+        />
+      )}
+
+      {/* Slide-out Sidebar */}
+      <div className={`fixed top-0 right-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-5">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-lg font-bold text-gray-800">Menu</h2>
+            <button onClick={closeMenu} className="p-1 text-gray-500 hover:text-red-500 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <nav className="flex flex-col space-y-4">
+            <Link 
+              to="/" 
+              onClick={closeMenu}
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-2 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              <span>Home</span>
+            </Link>
+
+            <Link 
+              to="/about" 
+              onClick={closeMenu}
+              className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-2 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span>About the Guide</span>
+            </Link>
+            
+            {/* Add more links here later! */}
+          </nav>
+        </div>
+      </div>
+
+      {/* ------------------------
+          MAIN PAGE CONTENT
+      ------------------------ */}
+      <main className="flex-grow">
+        <Outlet />
+      </main>
+    </div>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
