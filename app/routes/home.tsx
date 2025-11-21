@@ -70,10 +70,10 @@ export default function Home() {
   // ---------------------------------------------------------
   const tagDestinations: Record<string, string> = {
     // These tags go to The Writing Center
-    "Academic": "/resource/the-writing-center",
-    "Tutoring": "/resource/the-writing-center",
+    "Academic": "/tags/academic",
+    "Tutoring": "/tags/tutoring",
     "Writing": "/resource/the-writing-center",
-    "Library": "/resource/the-writing-center",
+    "Library": "/department/munday-library",
     
     // These go to The Huddle
     "Food Support": "/resource/the-huddle",
@@ -140,7 +140,7 @@ export default function Home() {
       </style>
 
       {/* Hero Section (Dark Blue Background) */}
-      <div className="bg-[#0F2E6A] text-white pb-20 pt-8 relative z-10">
+      <div className="bg-[#0F2E6A] text-white pb-20 pt-30 relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
           {/* Main Hero Content - Centered */}
