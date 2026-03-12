@@ -3,57 +3,44 @@ import { useParams, Link } from 'react-router';
 import { ChevronLeft, Search } from 'lucide-react';
 
 export function meta({ params }: { params: { tagId: string } }) {
-  const title = params.tagId ? params.tagId.charAt(0).toUpperCase() + params.tagId.slice(1) : "Tag";
+  const title = params.tagId ? decodeURIComponent(params.tagId.charAt(0).toUpperCase() + params.tagId.slice(1)) : "Tag";
   return [{ title: `${title} Resources - GOAT Guide` }];
 }
 
 interface Resource {
   id: number;
-  slug: string;
-  title: string;
+  resource_name: string;
   description: string;
-  color: string;
-  tags: string[];
+  keywords: string | null;
+  location: string | null;
 }
-
-const ResourceCard = ({ title, description, colorClass, linkTo }: { title: string; description: string; colorClass: string; linkTo: string }) => (
-  <Link to={linkTo} className="card-resource">
-    <div className={`absolute top-0 left-0 w-full h-1 ${colorClass}`}></div>
-    <h3 className="text-xl font-semibold mb-2">{title}</h3>
-    <p className="text-sm text-gray-300">{description}</p>
-  </Link>
-);
 
 export default function TagDetail() {
   const { tagId } = useParams();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const currentTag = tagId?.toLowerCase() || "";
+  const currentTag = decodeURIComponent(tagId || '').toLowerCase();
   const displayTitle = currentTag.charAt(0).toUpperCase() + currentTag.slice(1);
 
   useEffect(() => {
     fetch('/api/resources')
       .then(res => res.json())
-      .then((data: Resource[]) => {
-        setResources(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch resources:", err);
-        setLoading(false);
-      });
+      .then((data: Resource[]) => { setResources(data); setLoading(false); })
+      .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
+  // Match resources whose keywords contain this tag
   const filteredResources = resources.filter(r =>
-    r.tags.some(t => t.toLowerCase() === currentTag)
+    (r.keywords || '').split(',').map(k => k.trim().toLowerCase()).includes(currentTag)
   );
 
   return (
     <div className="page-wrapper">
+      {/* Hero */}
       <div className="hero-section">
         <div className="container-main">
-          <button className="flex items-center text-gray-300 hover:text-white mb-4 font-medium" onClick={() => window.history.back()}>
+          <button className="flex items-center text-gray-300 hover:text-white mb-6 font-medium" onClick={() => window.history.back()}>
             <ChevronLeft className="w-5 h-5 mr-1" /><span className="text-lg">Back</span>
           </button>
           <div className="text-center">
@@ -65,22 +52,22 @@ export default function TagDetail() {
         </div>
       </div>
 
+      {/* Results */}
       <div className="bg-gray-50 py-16 px-4 relative z-0">
         <div className="container-main">
           {loading ? (
             <p className="text-center text-gray-500">Loading...</p>
           ) : filteredResources.length > 0 ? (
             <>
-              <h4 className="section-heading">Found {filteredResources.length} Resources</h4>
+              <h4 className="section-heading">Found {filteredResources.length} Resource{filteredResources.length !== 1 ? 's' : ''}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredResources.map((resource) => (
-                  <ResourceCard
-                    key={resource.id}
-                    title={resource.title}
-                    description={resource.description}
-                    colorClass={resource.color}
-                    linkTo={`/resource/${resource.slug}`}
-                  />
+                  <Link key={resource.id} to={`/resource/${resource.id}`} className="card-resource block">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                    <h3 className="text-xl font-semibold mb-2">{resource.resource_name}</h3>
+                    <p className="text-sm text-gray-300 line-clamp-2">{resource.description}</p>
+                    {resource.location && <p className="text-xs text-gray-400 mt-2">{resource.location}</p>}
+                  </Link>
                 ))}
               </div>
             </>
@@ -89,7 +76,7 @@ export default function TagDetail() {
               <div className="bg-white p-8 rounded-xl shadow-lg inline-block">
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-[#192E56] mb-2">No Resources Found</h2>
-                <p className="text-gray-600 mb-6">We couldn't find any resources tagged with "{displayTitle}".</p>
+                <p className="text-gray-600 mb-6">No resources are tagged with "{displayTitle}".</p>
                 <Link to="/" className="btn-primary">Browse All Resources</Link>
               </div>
             </div>
