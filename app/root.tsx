@@ -62,7 +62,7 @@ export default function App() {
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
 
   useEffect(() => {
-    fetch('http://138.68.7.157:5000/api/departments')
+    fetch('/api/departments')
       .then((res) => res.json())
       .then((data) => setDepartments(data))
       .catch((err) => console.error("Error fetching departments:", err));
