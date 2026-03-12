@@ -145,11 +145,11 @@ export default function Home() {
 
           {/* Main Hero Content - Centered */}
           <main className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">The GOAT Guide</h2>
-            <h3 className="text-xl md:text-2xl text-gray-300 font-medium max-w-2xl mx-auto">
-              The student resource hub for your needs
-            </h3>
-
+            <div className="flex flex-col items-center mb-10">
+              <img src="/goat.svg" alt="Goat Icon" className="w-24 h-24 mb-6 opacity-90" />
+              <h2 className="text-4xl md:text-6xl font-extrabold mb-4">The GOAT Guide</h2>
+              <p className="text-lg md:text-xl text-blue-200">Your comprehensive resource guide for SEU</p>
+            </div>
             {/* Search Bar */}
             <div className="flex justify-center mt-10">
               <div className="w-full max-w-2xl flex items-center bg-white rounded-full p-2 shadow-xl">
