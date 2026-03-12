@@ -72,16 +72,6 @@ const ResourceDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased text-gray-900">
-      <style>
-        {`
-          /* Ensures external Tailwind CSS is loaded for component styling */
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-          .font-sans {
-            font-family: 'Inter', sans-serif;
-          }
-        `}
-      </style>
-
       {/* Hero Section (Light Blue Banner with Title) */}
       <div className="bg-[#C3E3F6] border-t pt-15 border-b border-blue-200 py-12 md:py-20 relative z-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -161,13 +151,11 @@ const ResourceDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Tag Bar (Tags) */}
+      {/* Bottom Tag Bar */}
       <div className="bg-[#C3E3F6] py-6 border-t border-blue-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-wrap justify-center gap-3">
-          {data.tags.map((tag, index) => (
-            <TagButton key={index}>
-                {tag}
-            </TagButton>
+          {(data?.tags || []).map((tag, index) => (
+            <TagButton key={index}>{tag}</TagButton>
           ))}
         </div>
       </div>

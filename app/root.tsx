@@ -10,7 +10,7 @@ import {
 } from "react-router";
 import { Menu, X, Home, BookOpen, Search, ChevronDown, Building2 } from 'lucide-react';
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -59,31 +59,14 @@ export default function App() {
   const toggleDepartments = () => setIsDepartmentsOpen(!isDepartmentsOpen);
 
   // List of Departments
-  const departments = [
-    "Institutional Effectiveness and Tech (IET)",
-    "Academic Exploration and Success",
-    "Academic Initiatives Success",
-    "Advancement",
-    "Athletics",
-    "Campus Ministry",
-    "Campus Safety",
-    "Career and Professional Development",
-    "Dean of Students",
-    "Financial Services",
-    "HHC",
-    "Mary Moody Northern Theater",
-    "Munday Library",
-    "Operations",
-    "Recreation and Wellness",
-    "Registrar Office",
-    "ResLife",
-    "Steds schools",
-    "Student Involvement",
-    "Wild Basin"
-  ];
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
 
-  // Helper to create URL slugs (e.g. "Campus Safety" -> "campus-safety")
-  const createSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  useEffect(() => {
+    fetch('http://138.68.7.157:5000/api/departments')
+      .then((res) => res.json())
+      .then((data) => setDepartments(data))
+      .catch((err) => console.error("Error fetching departments:", err));
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -178,24 +161,23 @@ export default function App() {
                 />
               </button>
 
-              {/* Dropdown List */}
+             {/* Dropdown List */}
               {isDepartmentsOpen && (
                 <div className="ml-4 mt-1 border-l-2 border-blue-100 pl-2 space-y-1">
-                  {departments.map((dept, index) => (
+                  {departments.map((dept) => (
                     <Link
-                      key={index}
-                      // Links to /department/athletics, /department/reslife, etc.
-                      to={`/department/${createSlug(dept)}`}
+                      key={dept.id} // Use the unique ID from your database
+                      // Assuming your department route expects the ID or Name
+                      to={`/department/${dept.id}`} 
                       onClick={closeMenu}
                       className="block px-3 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
                     >
-                      {dept}
+                      {dept.name}
                     </Link>
                   ))}
                 </div>
-              )}
+              )} 
             </div>
-
           </nav>
         </div>
       </div>
