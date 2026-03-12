@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import type { Route } from "./routes/+types/home";
+import type { Route } from "./ +types/home";
 import { Search, ChevronUp } from 'lucide-react';
 
 export function meta({}: Route.MetaArgs) {
