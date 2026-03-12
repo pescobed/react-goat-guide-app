@@ -27,6 +27,46 @@ const TagButton = ({ children, onClick }: { children: React.ReactNode; onClick?:
   </button>
 );
 
+const TAG_LIMIT = 24;
+
+const TagTicker = ({ tags, onTagClick }: { tags: string[]; onTagClick: (tag: string) => void }) => {
+  const limited = tags.slice(0, TAG_LIMIT);
+  const doubled = [...limited, ...limited];
+
+  return (
+    <div
+      style={{
+        overflow: 'hidden',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+        maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+      }}
+    >
+      <style>{`
+        @keyframes ticker-scroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .ticker-track {
+          display: flex;
+          gap: 12px;
+          width: max-content;
+          animation: ticker-scroll 40s linear infinite;
+        }
+        .ticker-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+      <div className="ticker-track py-2">
+        {doubled.map((tag, i) => (
+          <TagButton key={i} onClick={() => onTagClick(tag)}>
+            {tag}
+          </TagButton>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ResourceCard = ({ id, title, description }: { id: number; title: string; description: string }) => (
   <Link to={`/resource/${id}`} className="block h-full">
     <div className="relative p-6 bg-[#192E56] rounded-lg shadow-xl text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl h-full">
@@ -104,17 +144,13 @@ export default function Home() {
             </div>
           </main>
 
-          {/* Tag Buttons */}
+          {/* Tag Ticker */}
           <section className="mt-12">
-            <div className="flex flex-wrap justify-center gap-3">
-              {filteredTags.length > 0 ? (
-                filteredTags.map((tag, index) => (
-                  <TagButton key={index} onClick={() => handleTagClick(tag)}>{tag}</TagButton>
-                ))
-              ) : (
-                <p className="text-gray-400 italic">No tags match your search.</p>
-              )}
-            </div>
+            {filteredTags.length > 0 ? (
+              <TagTicker tags={filteredTags} onTagClick={handleTagClick} />
+            ) : (
+              <p className="text-center text-gray-400 italic">No tags match your search.</p>
+            )}
           </section>
         </div>
       </div>
