@@ -65,9 +65,24 @@ export default function About() {
               <h3 className="text-2xl font-semibold text-[#192E56] mb-4">
                 What does 'GOAT' stand for?
               </h3>
-              <p className="text-gray-700 leading-relaxed">
-                While we certainly think our resources are the Greatest Of All Time, GOAT stands for **Guide to Official Access and Tools**. It reflects our commitment to being the definitive source for official university information and services.
+              <p className="text-gray-700 leading-relaxed mb-4">
+                At its core, the GOAT Guide is your roadmap to success: <strong>Grow, Outreach, Achieve, and Thrive</strong>. We’ve designed our resources to support every facet of your university journey:
               </p>
+
+              <ul className="space-y-3 text-gray-700">
+                <li>
+                  <strong className="text-[#192E56]">G: Grow</strong> – Personal & Professional Development: Resources that help you evolve beyond the classroom.
+                </li>
+                <li>
+                  <strong className="text-[#192E56]">O: Outreach</strong> – Community & Connections: Building your relationship with the world around you.
+                </li>
+                <li>
+                  <strong className="text-[#192E56]">A: Achieve</strong> – Academic Excellence & Support: Finding the technical tools and support needed to excel in your courses.
+                </li>
+                <li>
+                  <strong className="text-[#192E56]">T: Thrive</strong> – Health, Wellness & Balance: Ensuring you have the stability needed to stay focused and healthy.
+                </li>
+              </ul>
             </div>
 
             {/* Call to Action Card */}
