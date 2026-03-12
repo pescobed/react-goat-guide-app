@@ -1,13 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { Search, ChevronLeft, ExternalLink, Mail, MapPin, Instagram } from 'lucide-react';
-
-export function meta() {
-  return [
-    { title: "The Writing Center - GOAT Guide" },
-    { name: "description", content: "Details and contact information for The Writing Center at SEU." },
-  ];
-}
 
 interface ContactItem {
   icon: React.ElementType;
@@ -15,7 +8,6 @@ interface ContactItem {
   value: string;
   link?: string;
 }
-
 interface ResourceDetailData {
   title: string;
   description: string;
@@ -25,47 +17,7 @@ interface ResourceDetailData {
   scheduleLink: string;
 }
 
-// ---------------------------
-// MOCK DATA (Replace with API/DB Fetch)
-// ---------------------------
-
-const mockResourceDatabase: Record<string, ResourceDetailData> = {
-  "the-writing-center": {
-    title: "The Writing Center",
-    description: "The writing center will help you at any point of the writing process. If you are looking for feedback on an essay, or even just need help starting a writing assignment, the writing center is there to support you.",
-    services: [
-      "In-person appointments",
-      "Virtual appointments",
-      "Online feedback on a draft",
-      "24/7 online writing resources"
-    ],
-    contactInfo: [
-      { icon: Mail, label: "Contact", value: "library@stedwards.edu", link: "mailto:library@stedwards.edu" },
-      { icon: MapPin, label: "Location", value: "Munday Library" },
-      { icon: Instagram, label: "Instagram", value: "@stedwardswriting", link: "https://instagram.com/stedwardswriting" },
-    ],
-    tags: ["Academic", "Tutoring", "Writing", "Library"],
-    scheduleLink: "#", 
-  },
-  "the-huddle": {
-    title: "The Huddle",
-    description: "The Huddle is SEU's resource center providing free food, clothes, and essential items to students facing basic needs insecurity.",
-    services: [
-      "Access to the food pantry",
-      "Free clothing closet",
-      "Hygiene products and school supplies",
-    ],
-    contactInfo: [
-        { icon: Mail, label: "Contact", value: "huddle@stedwards.edu", link: "mailto:huddle@stedwards.edu" },
-        { icon: MapPin, label: "Location", value: "ground floor of Le Mans Hal" },
-    ],
-    tags: ["Food Support", "Wellness", "Essentials"],
-    scheduleLink: "#", // No scheduling, but for demonstration
-  }
-  
-};
-
-// Component
+// Components
 // ---------------------------
 
 const TagButton = ({ children }: { children: React.ReactNode }) => (
@@ -76,11 +28,30 @@ const TagButton = ({ children }: { children: React.ReactNode }) => (
 
 const ResourceDetail: React.FC = () => {
   const params = useParams();
-  const resourceId = params.resourceId;
+  const slug = params.resourceId || "unknown";
 
-  const slug = resourceId || "unknown";
-  const data = mockResourceDatabase[slug]; 
+  //hold data for each resource
+  const [data, setData] = useState<ResourceDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  //fetch resource data based on slug
+  useEffect(() => {
+    setLoading(true);
+    // Point this to your backend API route
+    fetch(`http://138.68.7.157:5000/api/resources/${slug}`)
+      .then((res) => res.json())
+      .then((json) => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch resource:", err);
+        setLoading(false);
+      });
+  }, [slug]);
+
+  if (loading) return <div>Loading...</div>;
+  if (!data) return <div>Resource not found.</div>;
   // Handle case where resource is not found
   if (!data) {
     return (

@@ -124,7 +124,6 @@ export default function DepartmentDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased">
-       {/* Tailwind CSS CDN (Ensure consistency) */}
        <script src="https://cdn.tailwindcss.com"></script>
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'); .font-sans { font-family: 'Inter', sans-serif; }`}
