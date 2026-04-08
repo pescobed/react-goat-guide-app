@@ -9,7 +9,6 @@ import {
   useLocation,
 } from "react-router";
 import { Menu, X, Home, BookOpen, Search, ChevronDown, Building2 } from 'lucide-react';
-
 import { use, useState, useEffect } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -55,7 +54,6 @@ export default function App() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
-  
   const toggleDepartments = () => setIsDepartmentsOpen(!isDepartmentsOpen);
 
   // List of Departments
@@ -75,7 +73,6 @@ export default function App() {
       ------------------------ */}
       <header className="sticky top-0 bg-white shadow-sm z-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          
           {/* Logo - Clickable to go Home */}
           <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
             <h1 className="text-xl font-bold text-gray-800">The GOAT Guide</h1>
