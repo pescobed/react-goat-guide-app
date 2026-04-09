@@ -21,18 +21,10 @@ export default function LocationDetail() {
 
   useEffect(() => {
     setLoading(true);
-    // Fetch all resources and filter by the location string
-    fetch(`/api/resources`)
-      .then(res => res.json())
-      .then(data => {
-        const filtered = data.filter((r: Resource) => r.location === locationName);
-        setResources(filtered);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    fetch(`/api/locations/${encodeURIComponent(locationName || '')}`)
+        .then(res => res.json())
+        .then(data => { setResources(data); setLoading(false); })
+        .catch(err => { console.error(err); setLoading(false); });
   }, [locationName]);
 
   if (loading) return (
