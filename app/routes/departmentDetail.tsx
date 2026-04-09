@@ -92,8 +92,8 @@ export default function DepartmentDetail() {
                 </div>
 
                 {/* Card Body */}
-                <div className="p-5 flex flex-col flex-grow">
-                  <p className="text-sm text-gray-300 leading-relaxed mb-4 flex-grow line-clamp-3">
+                <div className="p-5 flex flex-col grow">
+                  <p className="text-sm text-gray-300 leading-relaxed mb-4 grow line-clamp-3">
                     {resource.description}
                   </p>
 

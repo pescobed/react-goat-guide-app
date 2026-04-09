@@ -15,4 +15,5 @@ export default [
 
   route("department/:departmentId", "routes/departmentDetail.tsx"),
 
+  route("location/:locationName", "routes/locationDetail.tsx"),
 ] satisfies RouteConfig;

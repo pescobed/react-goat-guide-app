@@ -50,7 +50,7 @@ const TagTicker = ({ tags, onTagClick }: { tags: string[]; onTagClick: (tag: str
           display: flex;
           gap: 12px;
           width: max-content;
-          animation: ticker-scroll 40s linear infinite;
+          animation: ticker-scroll 30s linear infinite;
         }
         .ticker-track:hover {
           animation-play-state: paused;
