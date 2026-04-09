@@ -51,7 +51,7 @@ export default function About() {
             <div>
               <h2 className="text-3xl font-bold text-[#0F2E6A] mb-6">Our Mission</h2>
               <p className="text-gray-700 text-lg leading-relaxed mb-6">
-                Developed as a Computer Science senior thesis, this project began in a 15-week <strong>Design Thinking</strong> course. We discovered that Hilltoppers do not lack resources, they lack <strong>awareness</strong> of them.
+                Developed as a Computer Science senior thesis, this project began in a 15-week <strong>Design Thinking</strong> course. We discovered that Hilltoppers do not lack resources, but a gap in <strong>awareness</strong> of them.
               </p>
               <p className="text-gray-700 text-lg leading-relaxed">
                 The GOAT Guide provides a technical foundation to ensure no student is left unaware of the support available to them.

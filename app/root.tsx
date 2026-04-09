@@ -8,7 +8,7 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import { Menu, X, Home, BookOpen, Search, ChevronDown, Building2 } from 'lucide-react';
+import { Menu, X, Home, BookOpen, Search, ChevronDown, Building2, MapPin } from 'lucide-react';
 import { use, useState, useEffect } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -174,6 +174,14 @@ export default function App() {
                   ))}
                 </div>
               )} 
+              <Link 
+                to="/locations" 
+                onClick={closeMenu}
+                className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <MapPin className="w-5 h-5" />
+                <span>View All Locations</span>
+              </Link>
             </div>
           </nav>
         </div>
@@ -182,7 +190,7 @@ export default function App() {
       {/* ------------------------
           MAIN PAGE CONTENT
       ------------------------ */}
-      <main className="flex-grow">
+      <main className="grow">
         <Outlet />
       </main>
     </div>
