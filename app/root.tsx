@@ -8,7 +8,7 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import { Menu, X, Home, BookOpen, Search, Building2, MapPin } from 'lucide-react';
+import { Menu, X, Home, BookOpen, Search, Building2, MapPin, Lock } from 'lucide-react';
 import { useState } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -92,8 +92,8 @@ export default function App() {
       )}
 
       {/* SLIDE-OUT SIDEBAR */}
-      <div className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'} overflow-y-auto`}>
-        <div className="p-5">
+      <div className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-5 h-full flex flex-col">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-lg font-bold text-gray-800">Menu</h2>
             <button onClick={closeMenu} className="p-1 text-gray-500 hover:text-red-500 transition-colors">
@@ -101,8 +101,8 @@ export default function App() {
             </button>
           </div>
 
-          <nav className="flex flex-col space-y-2">
-
+          {/* Wrapper for Nav Links - flex-grow pushes everything else down */}
+          <nav className="flex flex-col space-y-2 flex-grow">
             <Link
               to="/"
               onClick={closeMenu}
@@ -138,8 +138,20 @@ export default function App() {
               <BookOpen className="w-5 h-5" />
               <span>About the Guide</span>
             </Link>
-
           </nav>
+
+          {/* ADMIN LOGIN */}
+          <div className="mt-auto pt-4 pb-2">
+            <div className="border-t border-gray-100 mb-4" /> 
+            <Link
+              to="/admin/edit-select"
+              onClick={closeMenu}
+              className="flex items-center justify-center space-x-2 text-gray-400 hover:text-gray-600 text-xs font-semibold py-3 px-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest"
+            >
+              <Lock className="w-3 h-3" />
+              <span>Admin Login</span>
+            </Link>
+          </div>
         </div>
       </div>
 
