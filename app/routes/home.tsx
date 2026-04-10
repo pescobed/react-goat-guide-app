@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/home";
-import { Search, ChevronUp } from 'lucide-react';
+import { Search, ChevronUp, Tag, LayoutGrid } from 'lucide-react';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,6 +16,7 @@ interface Resource {
   description: string;
   keywords: string | null;
   location: string | null;
+  view_count: number;
 }
 
 const TagButton = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
@@ -89,7 +90,6 @@ export default function Home() {
       .catch(err => console.error("Failed to fetch resources:", err));
   }, []);
 
-  // Derive unique tags from keywords column (comma-separated in DB)
   const allTags = Array.from(
     new Set(
       resources
@@ -101,12 +101,15 @@ export default function Home() {
     tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredResources = resources.filter(r =>
-    r.resource_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.keywords?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.location?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // When searching: filter normally. When not: sort by most viewed
+  const filteredResources = searchQuery
+    ? resources.filter(r =>
+        r.resource_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.keywords?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.location?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [...resources].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0)).slice(0, 6);
 
   const handleTagClick = (tag: string) => {
     navigate(`/tags/${encodeURIComponent(tag.toLowerCase())}`);
@@ -137,9 +140,18 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent border-none focus:ring-0 p-2 text-gray-800 placeholder-gray-500 text-lg outline-none"
                 />
-                <button aria-label="Search" className="p-3 text-gray-600 hover:text-gray-900 transition-colors">
-                  <Search className="w-6 h-6" />
-                </button>
+                {searchQuery ? (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="p-3 text-gray-400 hover:text-gray-600 transition-colors text-sm font-medium"
+                  >
+                    Clear
+                  </button>
+                ) : (
+                  <button aria-label="Search" className="p-3 text-gray-600 hover:text-gray-900 transition-colors">
+                    <Search className="w-6 h-6" />
+                  </button>
+                )}
               </div>
             </div>
           </main>
@@ -151,6 +163,19 @@ export default function Home() {
             ) : (
               <p className="text-center text-gray-400 italic">No tags match your search.</p>
             )}
+
+            {/* Browse All Tags — only show when not actively searching */}
+            {!searchQuery && (
+              <div className="text-center mt-6">
+                <Link
+                  to="/tags"
+                  className="inline-flex items-center gap-2 text-blue-200 hover:text-white font-medium transition-colors underline underline-offset-4"
+                >
+                  <Tag className="w-4 h-4" />
+                  Browse All Tags
+                </Link>
+              </div>
+            )}
           </section>
         </div>
       </div>
@@ -158,9 +183,21 @@ export default function Home() {
       {/* Resources Grid */}
       <div className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8 relative z-0">
         <div className="mx-auto max-w-7xl">
-          <h4 className="text-3xl font-extrabold text-[#192E56] mb-10 text-center md:text-left">
-            {searchQuery ? `Results for "${searchQuery}"` : "Explore Popular Resources"}
-          </h4>
+          <div className="flex items-center justify-between mb-10">
+            <h4 className="text-3xl font-extrabold text-[#192E56]">
+              {searchQuery ? `Results for "${searchQuery}"` : "Most Visited Resources"}
+            </h4>
+            {/* Browse All Resources — only show when not searching */}
+            {!searchQuery && (
+              <Link
+                to="/resources"
+                className="inline-flex items-center gap-2 text-[#0F2E6A] hover:text-indigo-900 font-medium transition-colors underline underline-offset-4 text-sm"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                View All Resources
+              </Link>
+            )}
+          </div>
 
           {filteredResources.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

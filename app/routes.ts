@@ -9,11 +9,20 @@ export default [
 
   route("about", "routes/about.tsx"),
 
+  route("resources", "routes/resourceIndex.tsx"),
+
   route("resource/:resourceId", "routes/resourceDetail.tsx"),
+
+  route("tags", "routes/tagIndex.tsx"),  
 
   route("tags/:tagId", "routes/tagDetail.tsx"),
 
   route("department/:departmentId", "routes/departmentDetail.tsx"),
 
-  route("location/:locationName", "routes/locationDetail.tsx"),
+  route("departments", "routes/departmentIndex.tsx"),
+
+  route("locations/:locationId", "routes/locationDetail.tsx"),
+
+  route("locations", "routes/locationIndex.tsx")
+
 ] satisfies RouteConfig;

@@ -28,7 +28,9 @@ const ResourceDetail: React.FC = () => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
       })
-      .then(json => { setData(json); setLoading(false); })
+      .then(json => { setData(json); setLoading(false); 
+        fetch(`/api/resources/${resourceId}/view`, { method: 'PATCH' });
+      })
       .catch(err => { console.error(err); setLoading(false); });
   }, [resourceId]);
 
