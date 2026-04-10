@@ -144,7 +144,7 @@ export default function App() {
           <div className="mt-auto pt-4 pb-2">
             <div className="border-t border-gray-100 mb-4" /> 
             <Link
-              to="/admin/edit-select"
+              to="/admin-login"
               onClick={closeMenu}
               className="flex items-center justify-center space-x-2 text-gray-400 hover:text-gray-600 text-xs font-semibold py-3 px-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest"
             >
