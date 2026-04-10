@@ -26,6 +26,7 @@ export default [
   route("locations", "routes/locationIndex.tsx"),
 
   // ADMIN ROUTES
+  route("admin/edit-select", "routes/adminSelect.tsx"),
   route("admin/edit/:id", "routes/adminEdit.tsx"),
-  
+
 ] satisfies RouteConfig;
