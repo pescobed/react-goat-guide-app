@@ -28,5 +28,6 @@ export default [
   // ADMIN ROUTES
   route("admin/edit-select", "routes/adminSelect.tsx"),
   route("admin/edit/:id", "routes/adminEdit.tsx"),
+  route("admin-login", "routes/adminLogin.tsx"),
 
 ] satisfies RouteConfig;
