@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { MapPin, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import SearchBar from 'app/components/searchBar';
+import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import SearchBar from '../components/searchBar';
 
 interface Resource {
   id: number;
@@ -21,6 +21,7 @@ export default function LocationsIndex() {
     fetch('/api/resources')
       .then(res => res.json())
       .then((data: Resource[]) => {
+        // Use unique locations, trim them, and remove nulls
         const unique = Array.from(
           new Set(
             data
@@ -31,17 +32,20 @@ export default function LocationsIndex() {
         setLocations(unique);
         setLoading(false);
       })
-      .catch(err => { console.error(err); setLoading(false); });
+      .catch(err => { 
+        console.error("Database fetch error:", err); 
+        setLoading(false); 
+      });
   }, []);
 
+  // Filter based on search input
   const filtered = locations.filter(loc =>
     loc.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased">
-
-      {/* Hero */}
+      {/* Hero Section */}
       <div className="bg-[#0F2E6A] text-white pt-12 pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Link
@@ -49,7 +53,7 @@ export default function LocationsIndex() {
             className="flex items-center text-gray-300 hover:text-white transition-colors mb-6 font-medium"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
-            <span className="text-lg">Back</span>
+            <span className="text-lg">Back to Home</span>
           </Link>
 
           <div className="flex items-center gap-4 mb-10">
@@ -59,29 +63,29 @@ export default function LocationsIndex() {
             <div>
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Campus Locations</h1>
               <p className="text-gray-300 mt-2">
-                {loading ? 'Loading...' : `${locations.length} locations on campus`}
+                {loading ? 'Loading...' : `${locations.length} total locations discovered`}
               </p>
             </div>
           </div>
 
-          {/* Search Bar */}
-            <div className="flex justify-center">
-                <SearchBar 
-                    value={search} 
-                    onChange={setSearch} 
-                    placeholder="Search Locations on Campus..." 
-                />
-            </div> 
+          {/* Search Bar Component */}
+          <div className="flex justify-center">
+            <SearchBar 
+              value={search} 
+              onChange={setSearch} 
+              placeholder="Search Locations (e.g. Munday Library)..." 
+            />
+          </div> 
         </div>
       </div>
 
-      {/* Results Count */}
+      {/* Results Count Summary */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
         {!loading && search && (
           <p className="text-sm text-gray-500 mb-4">
             {filtered.length === 0
               ? `No locations match "${search}"`
-              : `Showing ${filtered.length} of ${locations.length} locations`}
+              : `Showing ${filtered.length} matching locations`}
           </p>
         )}
       </div>
@@ -90,7 +94,7 @@ export default function LocationsIndex() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <p className="text-gray-500 text-lg animate-pulse">Loading locations...</p>
+            <p className="text-gray-500 text-lg animate-pulse">Loading directory...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
@@ -98,30 +102,37 @@ export default function LocationsIndex() {
             <p className="text-xl text-gray-500">No locations found for "{search}"</p>
             <button
               onClick={() => setSearch("")}
-              className="mt-4 text-[#0F2E6A] underline hover:text-indigo-900 font-medium"
+              className="mt-4 text-[#0F2E6A] underline hover:text-blue-800 font-medium"
             >
               Clear search
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((loc) => (
-              <Link
-                key={loc}
-                to={`/location/${encodeURIComponent(loc)}`}
-                className="group flex items-center justify-between p-5 bg-white rounded-xl border-2 border-gray-200 hover:border-[#EDB920] hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#0F2E6A] rounded-lg text-[#EDB920] group-hover:bg-[#EDB920] group-hover:text-[#0F2E6A] transition-colors duration-200 shrink-0">
-                    <MapPin className="w-5 h-5" />
+            {filtered.map((loc) => {
+              // LOGIC: If location starts with a number, group it as Off-Campus
+              const isAddress = /^\d/.test(loc);
+              const displayTitle = isAddress ? "Off-Campus Locations" : loc;
+              const targetPath = isAddress ? "Off-Campus" : loc;
+
+              return (
+                <Link
+                  key={loc}
+                  to={`/location/${encodeURIComponent(targetPath)}`}
+                  className="group flex items-center justify-between p-5 bg-white rounded-xl border-2 border-gray-100 hover:border-[#EDB920] hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#0F2E6A] rounded-lg text-[#EDB920] group-hover:bg-[#EDB920] group-hover:text-[#0F2E6A] transition-colors duration-200 shrink-0">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <p className="font-semibold text-[#0F2E6A] group-hover:text-blue-900 leading-tight">
+                      {displayTitle}
+                    </p>
                   </div>
-                  <p className="font-semibold text-[#0F2E6A] group-hover:text-indigo-900 leading-tight">
-                    {loc}
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#EDB920] transition-colors duration-200 shrink-0" />
-              </Link>
-            ))}
+                  <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#EDB920] transition-colors duration-200 shrink-0" />
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

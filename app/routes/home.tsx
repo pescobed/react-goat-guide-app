@@ -91,10 +91,11 @@ export default function Home() {
   }, []);
 
   const allTags = Array.from(
-    new Set(
-      resources
-        .flatMap(r => (r.keywords || '').split(',').map(k => k.trim()).filter(Boolean))
-    )
+  new Set(
+    Array.isArray(resources) // Add this check
+      ? resources.flatMap(r => (r.keywords || '').split(',').map(k => k.trim()).filter(Boolean))
+      : []
+  )
   ).sort();
 
   const filteredTags = allTags.filter(tag =>

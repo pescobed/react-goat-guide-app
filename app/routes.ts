@@ -21,7 +21,7 @@ export default [
 
   route("departments", "routes/departmentIndex.tsx"),
 
-  route("locations/:locationId", "routes/locationDetail.tsx"),
+  route("location/:locationName", "routes/locationResources.tsx"),
 
   route("locations", "routes/locationIndex.tsx"),
 
