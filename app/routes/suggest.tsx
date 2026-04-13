@@ -14,7 +14,7 @@ export default function SuggestionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this hits your POST /api/suggestions endpoint
+    
     const res = await fetch('/api/suggestions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

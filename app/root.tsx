@@ -12,6 +12,7 @@ import { Menu, X, Home, BookOpen, Search, Building2, MapPin, Lock } from 'lucide
 import { useState } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
+import { MessageSquarePlus } from "lucide-react"; 
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/goat.svg", type: "image/svg+xml" },
@@ -138,6 +139,15 @@ export default function App() {
               <BookOpen className="w-5 h-5" />
               <span>About the Guide</span>
             </Link>
+
+            <Link 
+              to="/suggest" 
+              onClick={closeMenu} 
+              className="flex items-center space-x-3 text-gray-700 hover:text-[#0F2E6A] font-medium p-3 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <MessageSquarePlus className="w-5 h-5 text-[#EDB920]" />
+              <span>Suggest an Update</span>
+            </Link>
           </nav>
 
           {/* ADMIN LOGIN */}
@@ -159,6 +169,15 @@ export default function App() {
       <main className="grow">
         <Outlet />
       </main>
+
+      <footer className="bg-white border-t py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-gray-500 text-sm">© 2026 GOAT Guide - Senior Thesis Project</p>
+          <Link to="/suggest" className="text-[#0F2E6A] text-xs font-bold hover:underline mt-2 inline-block">
+            Notice a mistake? Suggest an update here.
+          </Link>
+        </div>
+      </footer>
 
     </div>
   );

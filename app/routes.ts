@@ -13,6 +13,8 @@ export default [
 
   route("resource/:resourceId", "routes/resourceDetail.tsx"),
 
+  route("suggest", "routes/suggest.tsx"),
+
   route("tags", "routes/tagIndex.tsx"),  
 
   route("tags/:tagId", "routes/tagDetail.tsx"),
