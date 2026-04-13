@@ -172,7 +172,7 @@ export default function App() {
 
       <footer className="bg-white border-t py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-gray-500 text-sm">© 2026 GOAT Guide - Senior Thesis Project</p>
+          <p className="text-gray-500 text-sm">© 2026 GOAT Guide </p>
           <Link to="/suggest" className="text-[#0F2E6A] text-xs font-bold hover:underline mt-2 inline-block">
             Notice a mistake? Suggest an update here.
           </Link>
