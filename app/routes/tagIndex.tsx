@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Tag, Search, ChevronLeft, X } from 'lucide-react'; // Added X for clear button
-import SearchBar from 'app/components/searchBar';
+import SearchBar from '../components/searchBar';
 
 export default function TagsIndex() {
   const [tags, setTags] = useState<string[]>([]);

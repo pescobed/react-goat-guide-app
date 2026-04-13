@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Building2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import SearchBar from 'app/components/searchBar';
+import SearchBar from '../components/searchBar';
 
 interface Department {
   id: number;

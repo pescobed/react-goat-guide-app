@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { LayoutGrid, ChevronLeft, Search, MapPin } from 'lucide-react';
-import SearchBar from 'app/components/searchBar';
+import SearchBar from '../components/searchBar';
 
 interface Resource {
   id: number;
