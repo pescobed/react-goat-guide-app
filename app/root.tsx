@@ -103,7 +103,7 @@ export default function App() {
           </div>
 
           {/* Wrapper for Nav Links - flex-grow pushes everything else down */}
-          <nav className="flex flex-col space-y-2 flex-grow">
+          <nav className="flex flex-col space-y-2 grow">
             <Link
               to="/"
               onClick={closeMenu}
