@@ -28,8 +28,12 @@ export default function ResourcesIndex() {
     fetch('/api/resources')
       .then(res => res.json())
       .then(data => {
-        // Sort by most viewed by default
-        const sorted = [...data].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0));
+        // Sort alphabetically by default
+        const sorted = [...data].sort((a, b) => {
+          const nameA = a.resource_name || "";
+          const nameB = b.resource_name || "";
+          return nameA.localeCompare(nameB);
+        });
         setResources(sorted);
         setLoading(false);
       })
@@ -76,7 +80,7 @@ export default function ResourcesIndex() {
                 <SearchBar 
                     value={search} 
                     onChange={setSearch} 
-                    placeholder="Search Tags..." 
+                    placeholder="Search Resources..." 
                 />
             </div> 
         </div>
@@ -92,7 +96,7 @@ export default function ResourcesIndex() {
           </p>
         )}
         {!loading && !search && (
-          <p className="text-sm text-gray-400 mb-4">Sorted by most visited</p>
+          <p className="text-sm text-gray-400 mb-4">Showing all resources alphabetically </p>
         )}
       </div>
 

@@ -186,7 +186,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-between mb-10">
             <h4 className="text-3xl font-extrabold text-[#192E56]">
-              {searchQuery ? `Results for "${searchQuery}"` : "Most Visited Resources"}
+              {searchQuery ? `Results for "${searchQuery}"` : "Most Viewed Resources"}
             </h4>
             {/* Browse All Resources — only show when not searching */}
             {!searchQuery && (

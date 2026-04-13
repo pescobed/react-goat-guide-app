@@ -63,7 +63,7 @@ export default function DepartmentsIndex() {
                 <SearchBar 
                     value={search} 
                     onChange={setSearch} 
-                    placeholder="Search Locations on Campus..." 
+                    placeholder="Search Departments..." 
                 />
             </div> 
         </div>
