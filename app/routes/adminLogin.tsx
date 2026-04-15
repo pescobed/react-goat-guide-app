@@ -8,7 +8,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -27,7 +27,7 @@ export default function AdminLogin() {
         // SUCCESS: Store the JWT token
         localStorage.setItem("admin_token", data.token);
         // Redirect to the selection page
-        navigate("/admin/edit-select");
+        navigate("/admin");
       } else {
         // FAILURE: Show error message from backend
         setError(data.error || "Login failed. Please check your credentials.");

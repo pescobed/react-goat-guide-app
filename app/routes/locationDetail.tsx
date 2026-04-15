@@ -62,7 +62,7 @@ export default function LocationDetail() {
             <Link key={resource.id} to={`/resource/${resource.id}`} className="block h-full group">
               <div className="bg-[#192E56] p-6 rounded-xl shadow-lg text-white border border-transparent group-hover:border-[#EDB920] transition-all h-full flex flex-col">
                 <h3 className="text-xl font-bold mb-2">{resource.resource_name}</h3>
-                <p className="text-sm text-gray-300 line-clamp-3 mb-4 flex-grow">{resource.description}</p>
+                <p className="text-sm text-gray-300 line-clamp-3 mb-4 grow">{resource.description}</p>
                 <div className="text-xs text-gray-400 space-y-1">
                     {resource.location && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {resource.location}</p>}
                     {resource.hours && <p className="flex items-center gap-1"><Clock className="w-3 h-3" /> {resource.hours}</p>}
