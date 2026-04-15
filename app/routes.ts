@@ -28,8 +28,15 @@ export default [
   route("locations", "routes/locationIndex.tsx"),
 
   // ADMIN ROUTES
-  route("admin/edit-select", "routes/adminSelect.tsx"),
+  route("admin", "routes/adminSelect.tsx"),
   route("admin/edit/:id", "routes/adminEdit.tsx"),
   route("admin-login", "routes/adminLogin.tsx"),
+
+  route("admin/edit/:id", "routes/adminEdit.tsx"),
+  route("admin/add-resource", "routes/adminEdit.tsx"),
+
+  route("admin/departments", "routes/adminDepartments.tsx"), 
+  route("admin/tags", "routes/adminTags.tsx"),
+  route("admin/locations", "routes/adminLocations.tsx"),
 
 ] satisfies RouteConfig;

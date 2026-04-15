@@ -1,7 +1,7 @@
 import { Outlet, Navigate } from "react-router";
 
 export default function AdminLayout() {
-  const isAdmin = true; // Replace with your actual Auth logic (Firebase, Supabase, etc.)
+  const isAdmin = true; 
 
   if (!isAdmin) {
     return <Navigate to="/login" replace />;
