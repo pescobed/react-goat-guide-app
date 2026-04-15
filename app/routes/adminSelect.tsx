@@ -47,7 +47,7 @@ export default function AdminSelect() {
   const fetchAll = () => {
     setLoading(true);
     Promise.all([
-      fetch("/api/admin/resources").then((r) => r.json()),
+      fetch("/api/admin/all").then((r) => r.json()),
       fetch("/api/auth/stats").then((r) => r.json()),
       fetch("/api/departments").then((r) => r.json()),
     ])
@@ -191,7 +191,7 @@ export default function AdminSelect() {
             { to: "/admin/departments", icon: <Building2 size={20} />, label: "Departments", count: departments.length },
             { to: "/admin/locations", icon: <MapPin size={20} />, label: "Locations", count: null },
             { to: "/admin/tags", icon: <Tag size={20} />, label: "Tags / Keywords", count: null },
-            { to: "/suggest", icon: <Lightbulb size={20} />, label: "View Suggestions", count: stats?.totalSuggestions ?? 0 },
+            { to: "/admin/suggestions", icon: <Lightbulb size={20} />, label: "View Suggestions", count: stats?.totalSuggestions ?? 0 },
           ].map((nav) => (
             <Link
               key={nav.to}
