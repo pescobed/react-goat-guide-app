@@ -29,11 +29,10 @@ export default [
 
   // ADMIN ROUTES
   route("admin", "routes/adminSelect.tsx"),
-  route("admin/edit/:id", "routes/adminEdit.tsx"),
   route("admin-login", "routes/adminLogin.tsx"),
 
-  route("admin/edit/:id", "routes/adminEdit.tsx"),
-  route("admin/add-resource", "routes/adminEdit.tsx"),
+  route("admin/edit/:id", "routes/adminEdit.tsx", { id: "admin-edit" }),
+  route("admin/add-resource", "routes/adminEdit.tsx", { id: "admin-add" }),
 
   route("admin/departments", "routes/adminDepartments.tsx"), 
   route("admin/tags", "routes/adminTags.tsx"),
