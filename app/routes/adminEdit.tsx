@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router";
+import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { ChevronLeft, Save, Lock, LayoutGrid, MapPin, Phone } from "lucide-react";
 
 const ADMIN_PASSWORD = "SeuADMINGOATupdates!@26";
 
 export default function AdminEdit() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const isEditing = Boolean(id) && id !== "add-resource";
 
@@ -39,8 +40,26 @@ export default function AdminEdit() {
       .then((res) => res.json())
       .then((data) => setDepartments(data))
       .catch((err) => console.error("Dept Fetch Error:", err));
+      
+    // Check if we are promoting a suggestion
+    if (!isEditing && location.state?.suggestionData) {
+      const sug = location.state.suggestionData;
+      setFormData({
+        resource_name: sug.resource_name || "",
+        description: sug.description || "",
+        location: sug.location || "",
+        keywords: sug.keywords || "",
+        phone: sug.phone || "",
+        email: sug.email || "",
+        socials: "", 
+        hours: sug.hours || "",
+        cta_link: sug.cta_link || "",
+        department_id: "", // User suggested name, you must pick the actual ID
+      });
+      alert("Note: User suggested Department: " + sug.department_name);
+    }
 
-    // Only fetch existing resource data when editing
+      // Only fetch existing resource data when editing
     if (isEditing) {
       fetch(`/api/resources/${id}`)
         .then((res) => res.json())

@@ -37,5 +37,6 @@ export default [
   route("admin/departments", "routes/adminDepartments.tsx"), 
   route("admin/tags", "routes/adminTags.tsx"),
   route("admin/locations", "routes/adminLocations.tsx"),
+  route("admin/suggestions", "routes/adminSuggestions.tsx")
 
 ] satisfies RouteConfig;

@@ -47,7 +47,7 @@ export default function AdminSelect() {
   const fetchAll = () => {
     setLoading(true);
     Promise.all([
-      fetch("/api/resources").then((r) => r.json()),
+      fetch("/api/admin/resources").then((r) => r.json()),
       fetch("/api/auth/stats").then((r) => r.json()),
       fetch("/api/departments").then((r) => r.json()),
     ])
