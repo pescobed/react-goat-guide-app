@@ -23,46 +23,65 @@ export default function AdminEdit() {
   });
 
   useEffect(() => {
-    // 1. Fetch Departments for the dropdown
+    // 1. Fetch Departments
     fetch('/api/departments')
       .then(res => res.json())
       .then(data => setDepartments(data))
       .catch(err => console.error("Dept Fetch Error:", err));
 
-    // 2. Load the specific resource data
-    fetch(`/api/resources/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setFormData(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Resource Fetch Error:", err);
-        setLoading(false);
-      });
+    // 2. Load the specific resource data ONLY if an ID exists
+    if (id) {
+      fetch(`/api/resources/${id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          // Fill the form with existing data
+          setFormData(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Resource Fetch Error:", err);
+          setLoading(false);
+        });
+    } else {
+      // 3. No ID found = "Add New" mode
+      // We stop loading and leave formData as its initial empty state
+      setLoading(false);
+    }
   }, [id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 1. Determine if we are Updating or Creating
+    const isEditing = Boolean(id);
+    const url = isEditing ? `/api/resources/${id}` : `/api/resources`;
+    const method = isEditing ? 'PUT' : 'POST';
+
     const token = localStorage.getItem("admin_token");
 
-    const response = await fetch(`/api/resources/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, 
-        'x-admin-password': password       
-      },
-      body: JSON.stringify(formData)
-    });
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, 
+          'x-admin-password': password       
+        },
+        body: JSON.stringify(formData)
+      });
 
-    if (response.status === 401) {
-      alert("Unauthorized: Incorrect admin password or expired session.");
-    } else if (response.ok) {
-      alert("Resource updated successfully!");
-      navigate(`/admin`); 
-    } else {
-      alert("Error: Could not update resource.");
+      if (response.status === 401) {
+        alert(" Unauthorized: Incorrect admin password or expired session.");
+      } else if (response.ok) {
+        alert(isEditing ? " Resource updated successfully!" : " New resource created!");
+        navigate(`/admin`); 
+      } else {
+        const errorData = await response.json();
+        alert(` Error: ${errorData.error || "Could not save resource."}`);
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      alert(" Connection error: Is the backend running?");
     }
   };
 
