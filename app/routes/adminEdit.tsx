@@ -96,11 +96,16 @@ export default function AdminEdit() {
 
     const url = isEditing ? `/api/resources/${id}` : `/api/resources`;
     const method = isEditing ? "PUT" : "POST";
+    const token = localStorage.getItem("admin_token");
 
     try {
       // adminFetch automatically attaches the token and handles 401 redirects
       const response = await adminFetch(url, {
         method,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           ...formData,
           department_id: formData.department_id || null,
