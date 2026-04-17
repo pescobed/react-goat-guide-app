@@ -23,14 +23,21 @@ export default function AdminSuggestions() {
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
+    setLoading(true); // Ensure loading starts
+    
     fetch("/api/auth/suggestions", {
       headers: { "Authorization": `Bearer ${token}` }
     })
-      .then(res => res.json())
-      .then(data => {
-        setSuggestions(data);
-        setLoading(false);
-      });
+      .then(res => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then(data => setSuggestions(data))
+      .catch(err => {
+        console.error(err);
+        showToast("Session expired. Please login again.", "error");
+      })
+      .finally(() => setLoading(false)); // Always stop loading
   }, []);
 
   const handleEditReview = (sug: any) => {
