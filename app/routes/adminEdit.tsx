@@ -314,7 +314,7 @@ export default function AdminEdit() {
               </button>
               
               <button
-                onClick={handleSave}
+                type="submit"
                 disabled={saving}
                 className="flex items-center gap-2 bg-[#0F2E6A] hover:bg-blue-800 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-blue-900/20 transition-all transform active:scale-95 disabled:opacity-50"
               >
