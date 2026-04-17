@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router";
-import { ChevronLeft, Save, Lock, LayoutGrid, MapPin, Phone } from "lucide-react";
-
-const ADMIN_PASSWORD = "SeuADMINGOATupdates!@26";
+import { ChevronLeft, Save, Lock, LayoutGrid, MapPin } from "lucide-react";
+import AdminNav from "../components/adminNav";
 
 export default function AdminEdit() {
   const { id } = useParams();
@@ -56,7 +55,9 @@ export default function AdminEdit() {
         cta_link: sug.cta_link || "",
         department_id: "", // User suggested name, you must pick the actual ID
       });
-      alert("Note: User suggested Department: " + sug.department_name);
+      if (sug.department_name) {
+        alert("Note: User suggested Department: " + sug.department_name + "\nPlease select the correct department from the dropdown.");
+      }
     }
 
       // Only fetch existing resource data when editing
@@ -100,11 +101,10 @@ export default function AdminEdit() {
     try {
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
+         headers: {
           "Authorization": `Bearer ${token}`,
-          "x-admin-password": password,
-        },
+          "Content-Type": "application/json"
+          },
         body: JSON.stringify({
           ...formData,
           department_id: formData.department_id || null,
@@ -130,10 +130,13 @@ export default function AdminEdit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-[#0F2E6A] font-bold">Loading resource...</p>
+      <div className="min-h-screen bg-gray-50">
+        <AdminNav />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#0F2E6A] font-bold">Loading resource...</p>
+          </div>
         </div>
       </div>
     );
@@ -141,29 +144,28 @@ export default function AdminEdit() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-[#0F2E6A] text-white py-8 mb-8 shadow-md">
-        <div className="max-w-4xl mx-auto px-4">
-          <Link
-            to="/admin"
-            className="flex items-center text-blue-200 hover:text-white mb-4 transition-colors text-sm font-semibold"
-          >
-            <ChevronLeft className="w-4 h-4" /> Back to Dashboard
-          </Link>
-          <div className="flex justify-between items-end">
-            <div>
-              <h1 className="text-3xl font-black">
-                {isEditing ? "Edit Resource" : "Add New Resource"}
-              </h1>
-              <p className="text-blue-300 text-sm mt-1 uppercase tracking-wider font-semibold">
-                {isEditing ? `Database ID: ${id}` : "Creating a new entry"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Admin Navigation */}
+      <AdminNav />
 
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <Link
+          to="/admin"
+          className="flex items-center text-gray-500 hover:text-[#0F2E6A] mb-6 transition-colors text-sm font-semibold"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Dashboard
+        </Link>
+
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-black text-[#0F2E6A]">
+            {isEditing ? "Edit Resource" : "Add New Resource"}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isEditing ? `Database ID: ${id}` : "Creating a new entry"}
+          </p>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-6">
 
           {/* Section: Categorization */}

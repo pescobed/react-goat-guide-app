@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { ChevronLeft, MapPin, Search, ExternalLink, BookOpen, Info } from "lucide-react";
+import { MapPin, Search, ExternalLink, BookOpen, Info } from "lucide-react";
+import AdminNav from "../components/adminNav";
 
 // NOTE: Locations in this system are NOT stored in a separate table.
 // They are text fields on individual resources. This page reads the
@@ -51,16 +52,11 @@ export default function AdminLocations() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Back Nav */}
-        <Link
-          to="/admin"
-          className="inline-flex items-center text-gray-500 hover:text-[#0F2E6A] mb-6 font-semibold text-sm transition-colors"
-        >
-          <ChevronLeft size={18} /> Back to Dashboard
-        </Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* Admin Navigation */}
+      <AdminNav />
 
+      <div className="max-w-3xl mx-auto p-6 md:p-8">
         {/* Title */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-[#0F2E6A] rounded-xl">
@@ -76,7 +72,7 @@ export default function AdminLocations() {
 
         {/* Info Banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex gap-3">
-          <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+          <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
           <div className="text-sm text-blue-700">
             <p className="font-bold mb-1">How Locations Work</p>
             <p>
@@ -114,7 +110,7 @@ export default function AdminLocations() {
                 className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-[#EDB920] hover:shadow-md transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center shrink-0">
                     <MapPin size={18} className="text-[#EDB920]" />
                   </div>
                   <div>

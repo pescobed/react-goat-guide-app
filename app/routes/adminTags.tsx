@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
-import { ChevronLeft, Tag, Search, Hash, TrendingUp, Edit3, Info } from "lucide-react";
-
-// NOTE: This app stores tags/keywords as comma-separated text on each
-// resource's `keywords` field — there is no separate tags table.
-// This page analyzes all keywords in use across resources, shows their
-// frequency, and links you to edit the resources that use each keyword.
+import { Tag, Search, Hash, TrendingUp, Plus, X, AlertCircle, CheckCircle } from "lucide-react";
+import AdminNav from "../components/adminNav";
 
 type KeywordEntry = {
   keyword: string;
@@ -14,17 +9,32 @@ type KeywordEntry = {
   resourceNames: string[];
 };
 
+type Toast = { msg: string; type: "success" | "error" } | null;
+
 export default function AdminTags() {
   const [keywordEntries, setKeywordEntries] = useState<KeywordEntry[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedKeyword, setExpandedKeyword] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast>(null);
+  const [addingToKeyword, setAddingToKeyword] = useState<string | null>(null);
+  const [selectedResourceId, setSelectedResourceId] = useState<string>("");
+  const [allResources, setAllResources] = useState<any[]>([]);
+  const [processingTag, setProcessingTag] = useState<{ resourceId: number; keyword: string } | null>(null);
 
-  useEffect(() => {
+  const showToast = (msg: string, type: "success" | "error") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const fetchData = () => {
+    setLoading(true);
     fetch("/api/resources")
       .then((r) => r.json())
       .then((resources: any[]) => {
+        setAllResources(resources);
+        
         // Parse and aggregate all keywords across all resources
         const map: Record<string, { count: number; resourceIds: number[]; resourceNames: string[] }> = {};
 
@@ -54,7 +64,9 @@ export default function AdminTags() {
       })
       .catch(() => setError("Failed to load resource data."))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const filtered = keywordEntries.filter((e) =>
     e.keyword.toLowerCase().includes(search.toLowerCase())
@@ -63,17 +75,124 @@ export default function AdminTags() {
   const totalKeywords = keywordEntries.length;
   const totalUsages = keywordEntries.reduce((sum, e) => sum + e.count, 0);
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Back Nav */}
-        <Link
-          to="/admin"
-          className="inline-flex items-center text-gray-500 hover:text-[#0F2E6A] mb-6 font-semibold text-sm transition-colors"
-        >
-          <ChevronLeft size={18} /> Back to Dashboard
-        </Link>
+  // Get resources that don't have this keyword
+  const getAvailableResources = (keyword: string) => {
+    const entry = keywordEntries.find(e => e.keyword === keyword);
+    if (!entry) return allResources;
+    
+    const hasKeywordSet = new Set(entry.resourceIds);
+    return allResources.filter(r => !hasKeywordSet.has(r.id));
+  };
 
+  const handleAddTagToResource = async () => {
+    if (!addingToKeyword || !selectedResourceId) return;
+
+    const resourceId = parseInt(selectedResourceId);
+    const resource = allResources.find(r => r.id === resourceId);
+    if (!resource) return;
+
+    setProcessingTag({ resourceId, keyword: addingToKeyword });
+
+    // Get current keywords
+    const token = localStorage.getItem("admin_token");
+    const currentKeywords = resource.keywords 
+      ? resource.keywords.split(",").map((k: string) => k.trim()).filter(Boolean)
+      : [];
+
+    // Add new keyword if not already present
+    if (!currentKeywords.map((k: string) => k.toLowerCase()).includes(addingToKeyword.toLowerCase())) {
+      currentKeywords.push(addingToKeyword);
+    }
+
+    try {
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...resource,
+          keywords: currentKeywords.join(", "),
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`Added "${addingToKeyword}" to "${resource.resource_name}"`, "success");
+        setAddingToKeyword(null);
+        setSelectedResourceId("");
+        fetchData();
+      } else {
+        showToast("Failed to add tag.", "error");
+      }
+    } catch {
+      showToast("Connection error.", "error");
+    } finally {
+      setProcessingTag(null);
+    }
+  };
+
+  const handleRemoveTag = async (resourceId: number, keyword: string, resourceName: string) => {
+    if (!confirm(`Remove tag "${keyword}" from "${resourceName}"?`)) return;
+
+    setProcessingTag({ resourceId, keyword });
+
+    const resource = allResources.find(r => r.id === resourceId);
+    if (!resource) return;
+
+    // Remove keyword from resource
+    const currentKeywords = resource.keywords 
+      ? resource.keywords.split(",").map((k: string) => k.trim()).filter(Boolean)
+      : [];
+    
+    const updatedKeywords = currentKeywords.filter(
+      (k: string) => k.toLowerCase() !== keyword.toLowerCase()
+    );
+
+    try {
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "PUT",
+         headers: {
+            "Authorization": `Bearer ${localStorage.getItem("admin_token")}`,
+            "Content-Type": "application/json"
+          },
+        body: JSON.stringify({
+          ...resource,
+          keywords: updatedKeywords.join(", "),
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`Removed "${keyword}" from "${resourceName}"`, "success");
+        fetchData();
+      } else {
+        showToast("Failed to remove tag.", "error");
+      }
+    } catch {
+      showToast("Connection error.", "error");
+    } finally {
+      setProcessingTag(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold ${
+            toast.type === "success" ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {toast.type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Admin Navigation */}
+      <AdminNav />
+
+      <div className="max-w-3xl mx-auto p-6 md:p-8">
         {/* Title */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-[#0F2E6A] rounded-xl">
@@ -83,18 +202,6 @@ export default function AdminTags() {
             <h1 className="text-3xl font-black text-[#0F2E6A]">Tags & Keywords</h1>
             <p className="text-sm text-gray-500">
               {totalKeywords} unique keyword{totalKeywords !== 1 ? "s" : ""} · {totalUsages} total usages
-            </p>
-          </div>
-        </div>
-
-        {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex gap-3">
-          <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-700">
-            <p className="font-bold mb-1">How Keywords Work</p>
-            <p>
-              Keywords are stored as comma-separated values in each resource's <code className="bg-blue-100 px-1 rounded text-xs">keywords</code> field (e.g. "Tutoring, Math, Free"). To add or edit keywords, click "Edit Resource" below or use the{" "}
-              <Link to="/admin" className="underline font-bold">main dashboard</Link>.
             </p>
           </div>
         </div>
@@ -139,6 +246,9 @@ export default function AdminTags() {
           <div className="space-y-2">
             {filtered.map((entry) => {
               const isExpanded = expandedKeyword === entry.keyword;
+              const availableResources = getAvailableResources(entry.keyword);
+              const isAdding = addingToKeyword === entry.keyword;
+
               return (
                 <div
                   key={entry.keyword}
@@ -149,7 +259,7 @@ export default function AdminTags() {
                     onClick={() => setExpandedKeyword(isExpanded ? null : entry.keyword)}
                   >
                     {/* Usage bar visual */}
-                    <div className="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center shrink-0">
                       <Hash size={18} className="text-[#EDB920]" />
                     </div>
 
@@ -175,21 +285,81 @@ export default function AdminTags() {
 
                   {/* Expanded resource list */}
                   {isExpanded && (
-                    <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 space-y-1">
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                        Resources using this keyword:
-                      </p>
-                      {entry.resourceNames.map((name, i) => (
-                        <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-                          <span className="text-sm text-gray-700 font-medium">{name}</span>
-                          <Link
-                            to={`/admin/edit/${entry.resourceIds[i]}`}
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-bold bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
-                          >
-                            <Edit3 size={11} /> Edit
-                          </Link>
+                    <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Resources using this keyword:
+                        </p>
+                        <button
+                          onClick={() => setAddingToKeyword(isAdding ? null : entry.keyword)}
+                          className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${
+                            isAdding
+                              ? "bg-gray-200 text-gray-700"
+                              : "bg-[#0F2E6A] text-white hover:bg-blue-800"
+                          }`}
+                        >
+                          {isAdding ? (
+                            <><X size={12} /> Cancel</>
+                          ) : (
+                            <><Plus size={12} /> Add to Resource</>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Add tag form */}
+                      {isAdding && (
+                        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-xs font-bold text-blue-800 mb-2">
+                            Add "{entry.keyword}" tag to a resource:
+                          </p>
+                          <div className="flex gap-2">
+                            <select
+                              className="flex-1 p-2 border border-blue-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500"
+                              value={selectedResourceId}
+                              onChange={(e) => setSelectedResourceId(e.target.value)}
+                            >
+                              <option value="">— Select Resource —</option>
+                              {availableResources.map((r) => (
+                                <option key={r.id} value={r.id}>{r.resource_name}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={handleAddTagToResource}
+                              disabled={!selectedResourceId || !!processingTag}
+                              className="bg-[#0F2E6A] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 transition-colors"
+                            >
+                              {processingTag ? "..." : "Add"}
+                            </button>
+                          </div>
+                          {availableResources.length === 0 && (
+                            <p className="text-xs text-blue-700 mt-2">
+                              All resources already have this tag.
+                            </p>
+                          )}
                         </div>
-                      ))}
+                      )}
+
+                      {/* Resource list */}
+                      <div className="space-y-1">
+                        {entry.resourceNames.map((name, i) => {
+                          const resourceId = entry.resourceIds[i];
+                          const isProcessing = processingTag?.resourceId === resourceId && processingTag?.keyword === entry.keyword;
+
+                          return (
+                            <div key={i} className="flex items-center justify-between py-2 px-2 border-b border-gray-100 last:border-0 hover:bg-white rounded transition-colors">
+                              <span className="text-sm text-gray-700 font-medium">{name}</span>
+                              <button
+                                onClick={() => handleRemoveTag(resourceId, entry.keyword, name)}
+                                disabled={isProcessing}
+                                className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-white hover:bg-red-600 font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-50"
+                                title="Remove this tag from resource"
+                              >
+                                <X size={11} /> {isProcessing ? "..." : "Remove"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -200,7 +370,7 @@ export default function AdminTags() {
 
         {filtered.length > 0 && (
           <p className="text-xs text-gray-400 text-center mt-6">
-            💡 Click any keyword to see which resources use it. Edit those resources to update or remove the keyword.
+            💡 Click any keyword to manage which resources use it. You can add or remove tags without editing the full resource.
           </p>
         )}
       </div>
