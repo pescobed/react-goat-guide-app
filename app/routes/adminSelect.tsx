@@ -108,8 +108,6 @@ export default function AdminSelect() {
     return !!(
       r.resource_name?.trim() &&
       r.description?.trim() &&
-      r.department_id &&
-      r.location?.trim() &&
       r.keywords?.trim()
     );
   };
@@ -156,8 +154,6 @@ export default function AdminSelect() {
     const missing: string[] = [];
     if (!r.resource_name?.trim()) missing.push("Name");
     if (!r.description?.trim()) missing.push("Description");
-    if (!r.department_id) missing.push("Department");
-    if (!r.location?.trim()) missing.push("Location");
     if (!r.keywords?.trim()) missing.push("Keywords");
     return missing;
   };
@@ -215,13 +211,13 @@ export default function AdminSelect() {
         {/* Incomplete Resources Alert */}
         {incompleteResources.length > 0 && !showIncompleteOnly && (
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
               <p className="font-bold text-red-800 mb-1">
                 {incompleteResources.length} Resource{incompleteResources.length !== 1 ? "s" : ""} Need{incompleteResources.length === 1 ? "s" : ""} Attention
               </p>
               <p className="text-sm text-red-700 mb-3">
-                These resources are missing required fields and cannot be published to the main site.
+                These resources are missing the required fields and cannot be published to the main site.
               </p>
               <button
                 onClick={() => setShowIncompleteOnly(true)}

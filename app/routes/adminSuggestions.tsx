@@ -22,7 +22,10 @@ export default function AdminSuggestions() {
   };
 
   useEffect(() => {
-    fetch("/api/admin/suggestions")
+    const token = localStorage.getItem("admin_token");
+    fetch("/api/auth/suggestions", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
         setSuggestions(data);
@@ -220,7 +223,7 @@ export default function AdminSuggestions() {
 
                       {/* Department */}
                       <div className="flex items-start gap-3">
-                        <Building2 className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                        <Building2 className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 font-semibold">Department</p>
                           <p className="text-sm text-gray-800">
@@ -231,7 +234,7 @@ export default function AdminSuggestions() {
 
                       {/* Location */}
                       <div className="flex items-start gap-3">
-                        <MapPin className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                        <MapPin className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 font-semibold">Location</p>
                           <p className="text-sm text-gray-800">
@@ -243,7 +246,7 @@ export default function AdminSuggestions() {
                       {/* Keywords */}
                       {sug.keywords && (
                         <div className="flex items-start gap-3">
-                          <TagIcon className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                          <TagIcon className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Keywords</p>
                             <p className="text-sm text-gray-800">{sug.keywords}</p>
@@ -254,7 +257,7 @@ export default function AdminSuggestions() {
                       {/* Hours */}
                       {sug.hours && (
                         <div className="flex items-start gap-3">
-                          <Clock className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                          <Clock className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Hours</p>
                             <p className="text-sm text-gray-800">{sug.hours}</p>
@@ -272,7 +275,7 @@ export default function AdminSuggestions() {
                       {/* Phone */}
                       {sug.phone && (
                         <div className="flex items-start gap-3">
-                          <Phone className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                          <Phone className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Phone</p>
                             <p className="text-sm text-gray-800">{sug.phone}</p>
@@ -283,7 +286,7 @@ export default function AdminSuggestions() {
                       {/* Email */}
                       {sug.email && (
                         <div className="flex items-start gap-3">
-                          <Mail className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                          <Mail className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Email</p>
                             <p className="text-sm text-gray-800">{sug.email}</p>
@@ -294,7 +297,7 @@ export default function AdminSuggestions() {
                       {/* CTA Link */}
                       {sug.cta_link && (
                         <div className="flex items-start gap-3">
-                          <LinkIcon className="text-[#EDB920] flex-shrink-0 mt-0.5" size={16} />
+                          <LinkIcon className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Website/Link</p>
                             <a 
@@ -311,7 +314,7 @@ export default function AdminSuggestions() {
 
                       {/* Submitted By */}
                       <div className="flex items-start gap-3 pt-2 border-t">
-                        <User className="text-gray-400 flex-shrink-0 mt-0.5" size={16} />
+                        <User className="text-gray-400 shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 font-semibold">Submitted By</p>
                           <p className="text-sm text-gray-800">
@@ -377,7 +380,7 @@ export default function AdminSuggestions() {
                   {/* Missing fields warning */}
                   {!isComplete && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-                      <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={16} />
+                      <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={16} />
                       <div className="text-xs text-yellow-800">
                         <p className="font-bold mb-1">Missing Required Fields</p>
                         <p>
