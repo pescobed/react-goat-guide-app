@@ -48,12 +48,20 @@ export default function AdminSelect() {
   }, []);
 
   const fetchAll = () => {
-    setLoading(true);
-    Promise.all([
-      fetch("/api/auth/all").then((r) => r.json()),
-      fetch("/api/auth/stats").then((r) => r.json()),
-      fetch("/api/departments").then((r) => r.json()),
-    ])
+      setLoading(true);
+      const token = localStorage.getItem("admin_token"); // Get your token
+
+      Promise.all([
+        fetch("/api/auth/all", {
+          headers: { "Authorization": `Bearer ${token}` }
+        }).then((r) => r.json()),
+        fetch("/api/auth/stats", {
+          headers: { "Authorization": `Bearer ${token}` }
+        }).then((r) => r.json()),
+        fetch("/api/departments", {
+          headers: { "Authorization": `Bearer ${token}` }
+        }).then((r) => r.json()), // Departments are usually public
+      ])
       .then(([res, s, depts]) => {
         setResources(Array.isArray(res) ? res : []);
         setStats(s);
