@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import {
   Building2, Plus, Trash2, Pencil, Check, X,
-  AlertCircle, CheckCircle, Search, ChevronDown, 
-  BookOpen, ExternalLink
+  AlertCircle, CheckCircle, Search, ChevronDown
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
 
@@ -25,6 +24,10 @@ export default function AdminDepartments() {
   const [editName, setEditName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
+
+  // States for adding resources
+  const [addingToDept, setAddingToDept] = useState<number | null>(null);
+  const [resourceSearch, setResourceSearch] = useState("");
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
@@ -87,7 +90,12 @@ export default function AdminDepartments() {
   };
 
   const handleUpdate = async (id: number) => {
+    if (!editName.trim()) return;
     setIsProcessing(true);
+    
+    const oldDept = departments.find(d => d.id === id);
+    if (!oldDept) return;
+    
     try {
       const token = localStorage.getItem("admin_token");
       const res = await fetch(`/api/departments/${id}`, {
@@ -99,7 +107,7 @@ export default function AdminDepartments() {
         body: JSON.stringify({ name: editName.trim() }),
       });
       if (res.ok) {
-        showToast("Updated successfully", "success");
+        showToast("Department name updated!", "success");
         setEditingId(null);
         fetchData();
       }
@@ -115,7 +123,7 @@ export default function AdminDepartments() {
       showToast("Cannot delete: Department has linked resources.", "error");
       return;
     }
-    if (!confirm(`Delete ${dept.name}?`)) return;
+    if (!confirm(`Delete "${dept.name}"?`)) return;
 
     try {
       const token = localStorage.getItem("admin_token");
@@ -132,7 +140,75 @@ export default function AdminDepartments() {
     }
   };
 
-  if (loading) return <div className="text-center py-20">Loading Departments...</div>;
+  const handleRemoveResourceFromDept = async (resourceId: number, resourceName: string) => {
+    if (!confirm(`Remove "${resourceName}" from this department?`)) return;
+    
+    const resource = allResources.find(r => r.id === resourceId);
+    if (!resource) return;
+
+    try {
+      const token = localStorage.getItem("admin_token");
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...resource,
+          department_id: null,
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`Removed "${resourceName}" from department`, "success");
+        fetchData();
+      }
+    } catch {
+      showToast("Failed to remove resource.", "error");
+    }
+  };
+
+  const handleAddResourceToDept = async (resourceId: number, deptId: number) => {
+    const resource = allResources.find(r => r.id === resourceId);
+    if (!resource) return;
+
+    try {
+      const token = localStorage.getItem("admin_token");
+      const res = await fetch(`/api/resources/${resourceId}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...resource,
+          department_id: deptId,
+        }),
+      });
+
+      if (res.ok) {
+        showToast(`Added "${resource.resource_name}" to department`, "success");
+        setAddingToDept(null);
+        setResourceSearch("");
+        fetchData();
+      }
+    } catch {
+      showToast("Failed to add resource.", "error");
+    }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-[#0F2E6A] font-bold">Loading Departments...</p>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,11 +266,16 @@ export default function AdminDepartments() {
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
-            className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:border-[#EDB920]"
+            className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:border-[#EDB920] focus:ring-2 focus:ring-yellow-100"
             placeholder="Search departments..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* Department List */}
@@ -202,6 +283,14 @@ export default function AdminDepartments() {
           {filteredDepartments.map((dept) => {
             const isExpanded = expandedDept === dept.id;
             const linkedResources = allResources.filter(r => r.department_id === dept.id);
+            const availableResources = allResources.filter(r => r.department_id !== dept.id);
+            const isAdding = addingToDept === dept.id;
+
+            const filteredAvailable = resourceSearch.trim() 
+              ? availableResources.filter(r => 
+                  r.resource_name.toLowerCase().includes(resourceSearch.toLowerCase())
+                )
+              : availableResources;
 
             return (
               <div key={dept.id} className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -220,12 +309,17 @@ export default function AdminDepartments() {
                           className="flex-1 px-3 py-1 border-b-2 border-[#EDB920] focus:outline-none font-bold text-[#0F2E6A]"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
+                          autoFocus
                         />
-                        <button onClick={() => handleUpdate(dept.id)} className="text-green-600"><Check size={20} /></button>
-                        <button onClick={() => setEditingId(null)} className="text-red-600"><X size={20} /></button>
+                        <button onClick={() => handleUpdate(dept.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Save">
+                          <Check size={20} />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Cancel">
+                          <X size={20} />
+                        </button>
                       </div>
                     ) : (
-                      <div onClick={() => setExpandedDept(isExpanded ? null : dept.id)} className="cursor-pointer">
+                      <div onClick={() => setExpandedDept(isExpanded ? null : dept.id)} className="cursor-pointer flex-1">
                         <p className="font-bold text-[#0F2E6A]">{dept.name}</p>
                         <p className="text-xs text-gray-400">{dept.resource_count} linked resource{dept.resource_count !== 1 ? 's' : ''}</p>
                       </div>
@@ -236,6 +330,7 @@ export default function AdminDepartments() {
                     <button 
                       onClick={() => { setEditingId(dept.id); setEditName(dept.name); }}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit name"
                     >
                       <Pencil size={18} />
                     </button>
@@ -243,6 +338,7 @@ export default function AdminDepartments() {
                       onClick={() => handleDelete(dept)}
                       className={`p-2 rounded-lg transition-colors ${dept.resource_count > 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
                       disabled={dept.resource_count > 0}
+                      title={dept.resource_count > 0 ? "Remove all resources first" : "Delete department"}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -252,20 +348,71 @@ export default function AdminDepartments() {
                 {/* Expanded Section (Accordion) */}
                 {isExpanded && (
                   <div className="bg-gray-50/50 border-t border-gray-100 px-12 py-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Resources in this department</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resources in this department</p>
+                      <button
+                        onClick={() => setAddingToDept(isAdding ? null : dept.id)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${isAdding ? 'bg-gray-200 text-gray-600' : 'bg-[#0F2E6A] text-white hover:bg-blue-800'}`}
+                      >
+                        {isAdding ? <X size={14} /> : <Plus size={14} />}
+                        {isAdding ? "Cancel" : "Add Resource"}
+                      </button>
+                    </div>
+
+                    {/* Add Resource Search */}
+                    {isAdding && (
+                      <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                        <div className="relative mb-2">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                          <input
+                            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:border-blue-400"
+                            placeholder="Search resources to add..."
+                            value={resourceSearch}
+                            onChange={(e) => setResourceSearch(e.target.value)}
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-40 overflow-y-auto space-y-1">
+                          {filteredAvailable.length === 0 ? (
+                            <p className="text-xs text-gray-500 italic p-2">No available resources found.</p>
+                          ) : (
+                            filteredAvailable.slice(0, 10).map(res => (
+                              <button
+                                key={res.id}
+                                onClick={() => handleAddResourceToDept(res.id, dept.id)}
+                                className="w-full text-left p-2 hover:bg-blue-100 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                              >
+                                {res.resource_name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       {linkedResources.length === 0 ? (
                         <p className="text-xs italic text-gray-400">No resources assigned to this department.</p>
                       ) : (
                         linkedResources.map(res => (
-                          <div key={res.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                          <div key={res.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm group">
                             <span className="text-sm font-bold text-gray-700">{res.resource_name}</span>
-                            <Link 
-                              to={`/admin/edit/${res.id}`}
-                              className="text-xs font-black text-blue-600 hover:underline"
-                            >
-                              EDIT
-                            </Link>
+                            <div className="flex items-center gap-2">
+                              <Link 
+                                to={`/admin/edit/${res.id}`}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit resource"
+                              >
+                                <Pencil size={16} />
+                              </Link>
+                              <button
+                                onClick={() => handleRemoveResourceFromDept(res.id, res.resource_name)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Remove from department"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                         ))
                       )}

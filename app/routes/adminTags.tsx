@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Tag, Search, Hash, TrendingUp, Plus, X, AlertCircle, CheckCircle, ChevronDown } from "lucide-react";
+import { Tag, Search, Hash, Plus, X, AlertCircle, CheckCircle, ChevronDown, Pencil, Trash2, Check } from "lucide-react";
 import AdminNav from "../components/adminNav";
 
 type KeywordEntry = {
@@ -24,8 +24,14 @@ export default function AdminTags() {
   const [newTagName, setNewTagName] = useState("");
   const [targetResourceId, setTargetResourceId] = useState("");
   
+  // States for adding to existing tag
   const [addingToKeyword, setAddingToKeyword] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string>("");
+  
+  // States for editing tag name
+  const [editingKeyword, setEditingKeyword] = useState<string | null>(null);
+  const [editKeywordName, setEditKeywordName] = useState("");
+  
   const [allResources, setAllResources] = useState<any[]>([]);
   const [processingTag, setProcessingTag] = useState<{ resourceId: number; keyword: string } | null>(null);
 
@@ -79,7 +85,6 @@ export default function AdminTags() {
   }, [keywordEntries, search]);
 
   const totalKeywords = keywordEntries.length;
-  const totalUsages = keywordEntries.reduce((sum, e) => sum + e.count, 0);
 
   const getAvailableResources = (keyword: string) => {
     const entry = keywordEntries.find(e => e.keyword.toLowerCase() === keyword.toLowerCase());
@@ -179,6 +184,76 @@ export default function AdminTags() {
     }
   };
 
+  const handleEditKeywordName = async (oldKeyword: string) => {
+    if (!editKeywordName.trim() || editKeywordName.toLowerCase() === oldKeyword.toLowerCase()) {
+      setEditingKeyword(null);
+      return;
+    }
+
+    const newKeyword = editKeywordName.trim();
+    const entry = keywordEntries.find(e => e.keyword.toLowerCase() === oldKeyword.toLowerCase());
+    if (!entry) return;
+
+    const resourcesToUpdate = entry.resourceIds.map(id => allResources.find(r => r.id === id)).filter(Boolean);
+    
+    if (resourcesToUpdate.length === 0) {
+      showToast("No resources to update.", "error");
+      setEditingKeyword(null);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("admin_token");
+      
+      // Update all resources with this tag
+      const updatePromises = resourcesToUpdate.map(resource => {
+        const currentKeywords = resource.keywords 
+          ? resource.keywords.split(",").map((k: string) => k.trim()).filter(Boolean)
+          : [];
+        
+        // Replace old keyword with new keyword
+        const updatedKeywords = currentKeywords.map((k: string) =>
+          k.toLowerCase() === oldKeyword.toLowerCase() ? newKeyword : k
+        );
+
+        return fetch(`/api/resources/${resource.id}`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ...resource,
+            keywords: updatedKeywords.join(", "),
+          }),
+        });
+      });
+
+      await Promise.all(updatePromises);
+      
+      showToast(`Renamed tag "${oldKeyword}" to "${newKeyword}" for ${resourcesToUpdate.length} resource(s)`, "success");
+      setEditingKeyword(null);
+      setEditKeywordName("");
+      fetchData();
+    } catch {
+      showToast("Failed to update tag name.", "error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <AdminNav />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#0F2E6A] font-bold">Loading Tags...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {toast && (
@@ -247,13 +322,13 @@ export default function AdminTags() {
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
-            className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:border-[#EDB920]"
+            className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:border-[#EDB920] focus:ring-2 focus:ring-yellow-100"
             placeholder="Search keywords..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
               <X size={18} />
             </button>
           )}
@@ -263,28 +338,66 @@ export default function AdminTags() {
         <div className="space-y-3">
           {filtered.map((entry) => {
             const isExpanded = expandedKeyword === entry.keyword;
+            const isEditing = editingKeyword === entry.keyword;
             const availableResources = getAvailableResources(entry.keyword);
             const isAdding = addingToKeyword === entry.keyword;
 
             return (
               <div key={entry.keyword} className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                <button
-                  className="w-full p-4 flex items-center gap-4 text-left hover:bg-gray-50"
-                  onClick={() => setExpandedKeyword(isExpanded ? null : entry.keyword)}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
-                    <Hash size={20} className="text-[#EDB920]" />
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <button
+                      onClick={() => setExpandedKeyword(isExpanded ? null : entry.keyword)}
+                      className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      <ChevronDown size={20} className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isEditing ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          className="flex-1 px-3 py-1 border-b-2 border-[#EDB920] focus:outline-none font-bold text-[#0F2E6A]"
+                          value={editKeywordName}
+                          onChange={(e) => setEditKeywordName(e.target.value)}
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleEditKeywordName(entry.keyword)} 
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg" 
+                          title="Save"
+                        >
+                          <Check size={20} />
+                        </button>
+                        <button 
+                          onClick={() => setEditingKeyword(null)} 
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg" 
+                          title="Cancel"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div onClick={() => setExpandedKeyword(isExpanded ? null : entry.keyword)} className="cursor-pointer flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#0F2E6A] capitalize text-lg">{entry.keyword}</span>
+                        </div>
+                        <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                          Used by {entry.count} resource{entry.count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <div className="grow">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#0F2E6A] capitalize text-lg">{entry.keyword}</span>
-                      <ChevronDown size={18} className={`text-gray-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                    </div>
-                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
-                      Used by {entry.count} resource{entry.count !== 1 ? 's' : ''}
-                    </p>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setEditingKeyword(entry.keyword); setEditKeywordName(entry.keyword); }}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit tag name"
+                    >
+                      <Pencil size={18} />
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {isExpanded && (
                   <div className="bg-gray-50/50 border-t border-gray-100 p-4">
@@ -329,9 +442,10 @@ export default function AdminTags() {
                             <span className="text-sm font-bold text-gray-700">{name}</span>
                             <button
                               onClick={() => handleRemoveTag(resourceId, entry.keyword, name)}
-                              className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-tight"
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove tag"
                             >
-                              Remove
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         );
