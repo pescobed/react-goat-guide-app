@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router";
-import { ChevronLeft, Save, Lock, LayoutGrid, MapPin } from "lucide-react";
+import { ChevronLeft, LayoutGrid, MapPin, CheckCircle } from "lucide-react";
 import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
 
@@ -10,8 +10,7 @@ export default function AdminEdit() {
   const navigate = useNavigate();
   const isEditing = Boolean(id) && id !== "add-resource";
 
-  const [loading, setLoading] = useState(isEditing); // only load if editing
-  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(isEditing);
   const [departments, setDepartments] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -28,20 +27,20 @@ export default function AdminEdit() {
     department_id: "",
   });
 
-  // Auth guard
+  // Auth guard: Ensure user is logged in before viewing this page
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
     if (!token) navigate("/admin-login");
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
-    // Always fetch departments for the dropdown
+    // Fetch departments for the dropdown
     adminFetch("/api/departments")
       .then((res) => res.json())
       .then((data) => setDepartments(data))
       .catch((err) => console.error("Dept Fetch Error:", err));
       
-    // Check if we are promoting a suggestion
+    // Handle suggestion promotion (pre-filling form from suggestion data)
     if (!isEditing && location.state?.suggestionData) {
       const sug = location.state.suggestionData;
       setFormData({
@@ -54,14 +53,14 @@ export default function AdminEdit() {
         socials: "", 
         hours: sug.hours || "",
         cta_link: sug.cta_link || "",
-        department_id: "", // User suggested name, you must pick the actual ID
+        department_id: "",
       });
       if (sug.department_name) {
         alert("Note: User suggested Department: " + sug.department_name + "\nPlease select the correct department from the dropdown.");
       }
     }
 
-      // Only fetch existing resource data when editing
+    // Fetch existing resource data if in Edit mode
     if (isEditing) {
       adminFetch(`/api/resources/${id}`)
         .then((res) => res.json())
@@ -85,7 +84,7 @@ export default function AdminEdit() {
           setLoading(false);
         });
     }
-  }, [id]);
+  }, [id, isEditing, location.state]);
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
@@ -97,24 +96,18 @@ export default function AdminEdit() {
 
     const url = isEditing ? `/api/resources/${id}` : `/api/resources`;
     const method = isEditing ? "PUT" : "POST";
-    const token = localStorage.getItem("admin_token");
 
     try {
+      // adminFetch automatically attaches the token and handles 401 redirects
       const response = await adminFetch(url, {
         method,
-         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-          },
         body: JSON.stringify({
           ...formData,
           department_id: formData.department_id || null,
         }),
       });
 
-      if (response.status === 401) {
-        alert("Unauthorized: Incorrect admin password or expired session.");
-      } else if (response.ok) {
+      if (response.ok) {
         alert(isEditing ? "Resource updated successfully!" : "New resource created!");
         navigate("/admin");
       } else {
@@ -123,7 +116,6 @@ export default function AdminEdit() {
       }
     } catch (err) {
       console.error("Save error:", err);
-      alert("Connection error: Is the backend running?");
     } finally {
       setSaving(false);
     }
@@ -145,7 +137,6 @@ export default function AdminEdit() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Admin Navigation */}
       <AdminNav />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -157,7 +148,7 @@ export default function AdminEdit() {
           <ChevronLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
 
-        {/* Page Title */}
+        {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#0F2E6A]">
             {isEditing ? "Edit Resource" : "Add New Resource"}
@@ -169,7 +160,7 @@ export default function AdminEdit() {
 
         <form onSubmit={handleSave} className="space-y-6">
 
-          {/* Section: Categorization */}
+          {/* Categorization Card */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-2 mb-5 border-b pb-3">
               <LayoutGrid className="w-5 h-5 text-[#EDB920]" />
@@ -213,7 +204,7 @@ export default function AdminEdit() {
                   value={formData.keywords}
                   onChange={handleChange("keywords")}
                 />
-                <p className="text-xs text-gray-400 mt-1">Comma-separated. Used for search and Tags page.</p>
+                <p className="text-xs text-gray-400 mt-1">Comma-separated keywords for search and tags.</p>
               </div>
 
               <div className="md:col-span-2">
@@ -223,13 +214,13 @@ export default function AdminEdit() {
                   className="w-full p-3 border-2 rounded-lg focus:border-[#EDB920] outline-none resize-y transition-colors"
                   value={formData.description}
                   onChange={handleChange("description")}
-                  placeholder="Describe what this resource does and who it helps..."
+                  placeholder="Describe the resource and its benefits..."
                 />
               </div>
             </div>
           </div>
 
-          {/* Section: Location & Contact */}
+          {/* Location Card */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-2 mb-5 border-b pb-3">
               <MapPin className="w-5 h-5 text-[#EDB920]" />
@@ -290,7 +281,7 @@ export default function AdminEdit() {
                 <label className="block text-sm font-bold text-gray-600 mb-1.5">Social Media Links</label>
                 <input
                   type="text"
-                  placeholder="Instagram, Twitter, Facebook URLs (comma-separated or JSON)"
+                  placeholder="Instagram, Twitter, Facebook URLs"
                   className="w-full p-3 border-2 rounded-lg focus:border-[#EDB920] outline-none transition-colors"
                   value={formData.socials}
                   onChange={handleChange("socials")}
@@ -299,30 +290,39 @@ export default function AdminEdit() {
             </div>
           </div>
 
-          {/* Authorization Footer */}
-          <div className="bg-[#0F2E6A] p-8 rounded-xl border-t-8 border-[#EDB920] shadow-xl text-white">
-            <div className="flex items-center gap-2 mb-5">
-              <Lock className="w-6 h-6 text-[#EDB920]" />
-              <h2 className="text-xl font-black italic uppercase">
-                {isEditing ? "Push Update" : "Create Resource"}
-              </h2>
+          {/* Action Footer */}
+          <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-gray-400 font-medium">
+                Review all fields (Name, Description, Keywords) before saving.
+              </p>
             </div>
-            <div className="flex flex-col md:flex-row gap-4">
-              <input
-                type="password"
-                placeholder="Enter Admin Secret Key"
-                className="grow p-4 border-2 border-white/20 bg-white/10 rounded-lg focus:bg-white focus:text-black outline-none transition-all placeholder:text-blue-200"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+            
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => navigate("/admin")}
+                className="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-[#EDB920] hover:bg-yellow-400 disabled:opacity-60 text-[#0F2E6A] px-10 py-4 rounded-lg font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="flex items-center gap-2 bg-[#0F2E6A] hover:bg-blue-800 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-blue-900/20 transition-all transform active:scale-95 disabled:opacity-50"
               >
-                <Save className="w-5 h-5" />
-                {saving ? "Saving..." : isEditing ? "Update Database" : "Create Resource"}
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={20} />
+                    {isEditing ? "Update Resource" : "Create Resource"}
+                  </>
+                )}
               </button>
             </div>
           </div>
