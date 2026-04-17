@@ -25,7 +25,7 @@ export default function AdminSuggestions() {
     const token = localStorage.getItem("admin_token");
     setLoading(true); // Ensure loading starts
     
-    fetch("/api/auth/suggestions", {
+    fetch("/api/suggestions", {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => {
