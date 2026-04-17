@@ -129,8 +129,7 @@ export default function AdminDepartments() {
     try {
       const token = localStorage.getItem("admin_token");
       const res = await adminFetch(`/api/departments/${dept.id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
+        method: "DELETE"
       });
       if (res.ok) {
         showToast("Department removed", "success");
