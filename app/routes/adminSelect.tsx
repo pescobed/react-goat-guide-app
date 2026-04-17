@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   BookOpen, Search, Edit3, Trash2, Eye, TrendingUp,
-  ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle
+  ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle,
+  Plus, LayoutGrid, Building2, MapPin, Tag, Lightbulb
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
 
@@ -49,7 +50,7 @@ export default function AdminSelect() {
 
   const fetchAll = () => {
       setLoading(true);
-      const token = localStorage.getItem("admin_token"); // Get your token
+      const token = localStorage.getItem("admin_token");
 
       Promise.all([
         fetch("/api/auth/all", {
@@ -60,7 +61,7 @@ export default function AdminSelect() {
         }).then((r) => r.json()),
         fetch("/api/departments", {
           headers: { "Authorization": `Bearer ${token}` }
-        }).then((r) => r.json()), // Departments are usually public
+        }).then((r) => r.json()),
       ])
       .then(([res, s, depts]) => {
         setResources(Array.isArray(res) ? res : []);
@@ -77,7 +78,9 @@ export default function AdminSelect() {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
+
   const token = localStorage.getItem("admin_token");
+  
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     setDeletingId(id);
@@ -104,6 +107,7 @@ export default function AdminSelect() {
   };
 
   // Check if resource is complete (ready for publishing)
+  // Required fields: resource_name, keywords (tags), description
   const isResourceComplete = (r: Resource): boolean => {
     return !!(
       r.resource_name?.trim() &&
@@ -154,23 +158,26 @@ export default function AdminSelect() {
     const missing: string[] = [];
     if (!r.resource_name?.trim()) missing.push("Name");
     if (!r.description?.trim()) missing.push("Description");
-    if (!r.keywords?.trim()) missing.push("Keywords");
+    if (!r.keywords?.trim()) missing.push("Tags");
     return missing;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F2E6A] flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="w-12 h-12 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="font-bold tracking-widest uppercase text-sm">Loading Admin Panel...</p>
+      <div className="min-h-screen bg-gray-50">
+        <AdminNav />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#0F2E6A] font-bold">Loading Dashboard...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Toast */}
       {toast && (
         <div
@@ -183,45 +190,76 @@ export default function AdminSelect() {
         </div>
       )}
 
-      {/* Admin Navigation */}
       <AdminNav />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-
-        {/* Stats Bar */}
-        {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            {[
-              { label: "Total Resources", value: stats.totalResources, icon: <BookOpen size={20} />, color: "text-blue-600" },
-              { label: "Total Views", value: stats.totalViews?.toLocaleString(), icon: <Eye size={20} />, color: "text-green-600" },
-              { label: "Pending Suggestions", value: stats.totalSuggestions, icon: <AlertCircle size={20} />, color: "text-yellow-600" },
-              { label: "Incomplete Resources", value: incompleteResources.length, icon: <AlertTriangle size={20} />, color: "text-red-600" },
-            ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center gap-4">
-                <div className={`p-3 rounded-lg bg-gray-50 ${s.color}`}>{s.icon}</div>
-                <div>
-                  <p className="text-2xl font-black text-gray-800">{s.value ?? 0}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">{s.label}</p>
-                </div>
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total Resources</p>
+                <p className="text-3xl font-black text-[#0F2E6A]">{stats?.totalResources ?? 0}</p>
               </div>
-            ))}
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <BookOpen className="text-blue-600" size={24} />
+              </div>
+            </div>
           </div>
-        )}
+
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Total Views</p>
+                <p className="text-3xl font-black text-[#0F2E6A]">{stats?.totalViews ?? 0}</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-xl">
+                <Eye className="text-green-600" size={24} />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Pending Suggestions</p>
+                <p className="text-3xl font-black text-[#0F2E6A]">{stats?.totalSuggestions ?? 0}</p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-xl">
+                <AlertCircle className="text-[#EDB920]" size={24} />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Incomplete Resources</p>
+                <p className="text-3xl font-black text-red-600">{incompleteResources.length}</p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-xl">
+                <AlertTriangle className="text-red-600" size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Incomplete Resources Alert */}
         {incompleteResources.length > 0 && !showIncompleteOnly && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-5 flex items-start gap-4 mb-6">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="text-red-600" size={24} />
+            </div>
             <div className="flex-1">
-              <p className="font-bold text-red-800 mb-1">
-                {incompleteResources.length} Resource{incompleteResources.length !== 1 ? "s" : ""} Need{incompleteResources.length === 1 ? "s" : ""} Attention
+              <p className="font-black text-red-800 text-lg mb-1">
+                {incompleteResources.length} Resource{incompleteResources.length !== 1 ? "s" : ""} Need Attention
               </p>
               <p className="text-sm text-red-700 mb-3">
-                These resources are missing the required fields and cannot be published to the main site.
+                These resources are missing required fields (Name, Description, or Tags) and cannot be published to the main site.
               </p>
               <button
                 onClick={() => setShowIncompleteOnly(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
               >
                 View Incomplete Resources
               </button>
@@ -230,41 +268,47 @@ export default function AdminSelect() {
         )}
 
         {/* Resource Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Table Header */}
-          <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-            <h2 className="font-black text-gray-800 text-lg">
-              {showIncompleteOnly ? `Incomplete Resources (${filtered.length})` : `All Resources (${filtered.length})`}
-            </h2>
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              {/* Incomplete Toggle */}
+          <div className="p-5 border-b border-gray-100">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
+              <h2 className="font-black text-gray-800 text-xl flex items-center gap-2">
+                <LayoutGrid size={24} className="text-[#EDB920]" />
+                {showIncompleteOnly ? `Incomplete Resources (${filtered.length})` : `All Resources (${filtered.length})`}
+              </h2>
               {showIncompleteOnly && (
                 <button
                   onClick={() => setShowIncompleteOnly(false)}
-                  className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors"
+                  className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors"
                 >
-                  <X size={14} /> Show All Resources
+                  <X size={16} /> Show All Resources
                 </button>
               )}
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+            </div>
+
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
-                  className="pl-9 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:border-[#EDB920] focus:ring-1 focus:ring-[#EDB920]"
+                  className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#EDB920] focus:ring-2 focus:ring-yellow-100 transition-all"
                   placeholder="Search name, keywords, location..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
                 {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    <X size={14} />
+                  <button 
+                    onClick={() => setSearch("")} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                  >
+                    <X size={18} />
                   </button>
                 )}
               </div>
-              {/* Dept Filter */}
+              
               <div className="relative">
                 <select
-                  className="appearance-none pl-3 pr-8 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#EDB920] cursor-pointer"
+                  className="appearance-none pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#EDB920] cursor-pointer w-full sm:w-auto"
                   value={deptFilter}
                   onChange={(e) => setDeptFilter(e.target.value)}
                 >
@@ -274,7 +318,7 @@ export default function AdminSelect() {
                     <option key={d.id} value={String(d.id)}>{d.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
               </div>
             </div>
           </div>
@@ -354,16 +398,18 @@ export default function AdminSelect() {
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               to={`/admin/edit/${r.id}`}
-                              className="inline-flex items-center gap-1 bg-blue-50 hover:bg-[#0F2E6A] hover:text-white text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit"
                             >
-                              <Edit3 size={13} /> Edit
+                              <Edit3 size={18} />
                             </Link>
                             <button
                               onClick={() => handleDelete(r.id, r.resource_name)}
                               disabled={deletingId === r.id}
-                              className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 hover:text-white text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Delete"
                             >
-                              <Trash2 size={13} /> {deletingId === r.id ? "..." : "Delete"}
+                              <Trash2 size={18} />
                             </button>
                           </div>
                         </td>
