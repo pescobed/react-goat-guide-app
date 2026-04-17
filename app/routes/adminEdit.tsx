@@ -291,10 +291,11 @@ export default function AdminEdit() {
           </div>
 
           {/* Action Footer */}
-          <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* BOTTOM ACTION BAR */}
+          <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400 font-medium">
-                Review all fields (Name, Description, Keywords) before saving.
+                Ensure all required fields (Name, Description, Tags) are filled to publish.
               </p>
             </div>
             
@@ -308,7 +309,7 @@ export default function AdminEdit() {
               </button>
               
               <button
-                type="submit"
+                onClick={handleSave}
                 disabled={saving}
                 className="flex items-center gap-2 bg-[#0F2E6A] hover:bg-blue-800 text-white px-8 py-3 rounded-xl font-black shadow-lg shadow-blue-900/20 transition-all transform active:scale-95 disabled:opacity-50"
               >
