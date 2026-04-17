@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import {
-  LayoutDashboard, BookOpen, Building2, MapPin, Tag,
-  Search, Edit3, Trash2, Plus, LogOut, TrendingUp,
-  Eye, Lightbulb, ChevronDown, X, AlertCircle, CheckCircle
+  BookOpen, Search, Edit3, Trash2, Eye, TrendingUp,
+  ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle
 } from "lucide-react";
-
-const ADMIN_PASSWORD = "SeuADMINGOATupdates!@26";
+import AdminNav from "../components/adminNav";
 
 type Resource = {
   id: number;
@@ -16,6 +14,10 @@ type Resource = {
   department_id: number | null;
   view_count: number;
   keywords: string;
+  phone: string;
+  email: string;
+  cta_link: string;
+  hours: string;
 };
 
 type Stats = {
@@ -35,6 +37,7 @@ export default function AdminSelect() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -66,14 +69,17 @@ export default function AdminSelect() {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
-
+  const token = localStorage.getItem("admin_token");
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/resources/${id}`, {
         method: "DELETE",
-        headers: { "x-admin-password": ADMIN_PASSWORD },
+        headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
       });
       if (res.ok) {
         showToast(`"${name}" deleted successfully.`, "success");
@@ -89,28 +95,64 @@ export default function AdminSelect() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    navigate("/admin-login");
+  // Check if resource is complete (ready for publishing)
+  const isResourceComplete = (r: Resource): boolean => {
+    return !!(
+      r.resource_name?.trim() &&
+      r.description?.trim() &&
+      r.department_id &&
+      r.location?.trim() &&
+      r.keywords?.trim()
+    );
   };
 
+  const incompleteResources = useMemo(() => {
+    return resources.filter(r => !isResourceComplete(r));
+  }, [resources]);
+
   const filtered = useMemo(() => {
-    return resources.filter((r) => {
-      const matchSearch =
-        search === "" ||
-        r.resource_name?.toLowerCase().includes(search.toLowerCase()) ||
-        r.description?.toLowerCase().includes(search.toLowerCase()) ||
-        r.keywords?.toLowerCase().includes(search.toLowerCase()) ||
-        r.location?.toLowerCase().includes(search.toLowerCase());
-      const matchDept =
-        deptFilter === "all" ||
-        (deptFilter === "none" ? !r.department_id : String(r.department_id) === deptFilter);
-      return matchSearch && matchDept;
-    });
-  }, [resources, search, deptFilter]);
+    let filtered = resources;
+
+    // Filter by incomplete status
+    if (showIncompleteOnly) {
+      filtered = filtered.filter(r => !isResourceComplete(r));
+    }
+
+    // Filter by search
+    if (search) {
+      filtered = filtered.filter((r) => {
+        const searchLower = search.toLowerCase();
+        return (
+          r.resource_name?.toLowerCase().includes(searchLower) ||
+          r.description?.toLowerCase().includes(searchLower) ||
+          r.keywords?.toLowerCase().includes(searchLower) ||
+          r.location?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by department
+    if (deptFilter !== "all") {
+      filtered = filtered.filter(r => 
+        deptFilter === "none" ? !r.department_id : String(r.department_id) === deptFilter
+      );
+    }
+
+    return filtered;
+  }, [resources, search, deptFilter, showIncompleteOnly]);
 
   const deptName = (id: number | null) =>
     departments.find((d) => d.id === id)?.name ?? <span className="text-gray-300 italic">Unassigned</span>;
+
+  const getMissingFields = (r: Resource): string[] => {
+    const missing: string[] = [];
+    if (!r.resource_name?.trim()) missing.push("Name");
+    if (!r.description?.trim()) missing.push("Description");
+    if (!r.department_id) missing.push("Department");
+    if (!r.location?.trim()) missing.push("Location");
+    if (!r.keywords?.trim()) missing.push("Keywords");
+    return missing;
+  };
 
   if (loading) {
     return (
@@ -137,42 +179,19 @@ export default function AdminSelect() {
         </div>
       )}
 
-      {/* Top Nav */}
-      <header className="bg-[#0F2E6A] text-white shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <LayoutDashboard className="text-[#EDB920]" size={24} />
-            <div>
-              <h1 className="text-xl font-black leading-tight">GOAT Guide Admin</h1>
-              <p className="text-blue-300 text-xs uppercase tracking-widest">Resource Management</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/admin/edit/add-resource"
-              className="bg-[#EDB920] text-[#0F2E6A] px-4 py-2 rounded-lg font-black text-sm uppercase tracking-wide flex items-center gap-2 hover:bg-yellow-400 transition-colors"
-            >
-              <Plus size={16} /> Add Resource
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-blue-300 hover:text-white text-sm font-semibold transition-colors"
-            >
-              <LogOut size={16} /> Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Admin Navigation */}
+      <AdminNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
         {/* Stats Bar */}
         {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             {[
               { label: "Total Resources", value: stats.totalResources, icon: <BookOpen size={20} />, color: "text-blue-600" },
               { label: "Total Views", value: stats.totalViews?.toLocaleString(), icon: <Eye size={20} />, color: "text-green-600" },
-              { label: "Pending Suggestions", value: stats.totalSuggestions, icon: <Lightbulb size={20} />, color: "text-yellow-600" },
+              { label: "Pending Suggestions", value: stats.totalSuggestions, icon: <AlertCircle size={20} />, color: "text-yellow-600" },
+              { label: "Incomplete Resources", value: incompleteResources.length, icon: <AlertTriangle size={20} />, color: "text-red-600" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 flex items-center gap-4">
                 <div className={`p-3 rounded-lg bg-gray-50 ${s.color}`}>{s.icon}</div>
@@ -185,36 +204,44 @@ export default function AdminSelect() {
           </div>
         )}
 
-        {/* Quick Nav */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { to: "/admin/departments", icon: <Building2 size={20} />, label: "Departments", count: departments.length },
-            { to: "/admin/locations", icon: <MapPin size={20} />, label: "Locations", count: null },
-            { to: "/admin/tags", icon: <Tag size={20} />, label: "Tags / Keywords", count: null },
-            { to: "/admin/suggestions", icon: <Lightbulb size={20} />, label: "View Suggestions", count: stats?.totalSuggestions ?? 0 },
-          ].map((nav) => (
-            <Link
-              key={nav.to}
-              to={nav.to}
-              className="bg-white border border-gray-200 hover:border-[#EDB920] hover:shadow-md rounded-xl p-4 flex items-center gap-3 transition-all group"
-            >
-              <span className="text-[#0F2E6A] group-hover:text-[#EDB920] transition-colors">{nav.icon}</span>
-              <div>
-                <p className="font-bold text-sm text-gray-800">{nav.label}</p>
-                {nav.count !== null && (
-                  <p className="text-xs text-gray-400">{nav.count} entries</p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {/* Incomplete Resources Alert */}
+        {incompleteResources.length > 0 && !showIncompleteOnly && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <p className="font-bold text-red-800 mb-1">
+                {incompleteResources.length} Resource{incompleteResources.length !== 1 ? "s" : ""} Need{incompleteResources.length === 1 ? "s" : ""} Attention
+              </p>
+              <p className="text-sm text-red-700 mb-3">
+                These resources are missing required fields and cannot be published to the main site.
+              </p>
+              <button
+                onClick={() => setShowIncompleteOnly(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+              >
+                View Incomplete Resources
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Resource Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Table Header */}
           <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-            <h2 className="font-black text-gray-800 text-lg">All Resources ({filtered.length})</h2>
+            <h2 className="font-black text-gray-800 text-lg">
+              {showIncompleteOnly ? `Incomplete Resources (${filtered.length})` : `All Resources (${filtered.length})`}
+            </h2>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              {/* Incomplete Toggle */}
+              {showIncompleteOnly && (
+                <button
+                  onClick={() => setShowIncompleteOnly(false)}
+                  className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors"
+                >
+                  <X size={14} /> Show All Resources
+                </button>
+              )}
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
@@ -256,6 +283,7 @@ export default function AdminSelect() {
                   <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs">Resource</th>
                   <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs hidden md:table-cell">Department</th>
                   <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs hidden lg:table-cell">Location</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-center">Status</th>
                   <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-center">Views</th>
                   <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-right">Actions</th>
                 </tr>
@@ -263,53 +291,81 @@ export default function AdminSelect() {
               <tbody className="divide-y divide-gray-50">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-gray-400">
+                    <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
                       <Search size={32} className="mx-auto mb-2 opacity-30" />
                       <p className="font-semibold">No resources match your search.</p>
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-5 py-4">
-                        <p className="font-bold text-[#0F2E6A] group-hover:text-blue-700 transition-colors leading-tight">
-                          {r.resource_name}
-                        </p>
-                        {r.keywords && (
-                          <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{r.keywords}</p>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell">
-                        <span className="text-sm text-gray-600">{deptName(r.department_id)}</span>
-                      </td>
-                      <td className="px-5 py-4 hidden lg:table-cell">
-                        <span className="text-sm text-gray-500">{r.location || <span className="text-gray-300 italic">—</span>}</span>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-gray-500 text-xs font-semibold">
-                          <TrendingUp size={12} className="text-green-400" />
-                          {r.view_count ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            to={`/admin/edit/${r.id}`}
-                            className="inline-flex items-center gap-1 bg-blue-50 hover:bg-[#0F2E6A] hover:text-white text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                          >
-                            <Edit3 size={13} /> Edit
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(r.id, r.resource_name)}
-                            disabled={deletingId === r.id}
-                            className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 hover:text-white text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
-                          >
-                            <Trash2 size={13} /> {deletingId === r.id ? "..." : "Delete"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  filtered.map((r) => {
+                    const isComplete = isResourceComplete(r);
+                    const missingFields = getMissingFields(r);
+
+                    return (
+                      <tr key={r.id} className={`hover:bg-gray-50 transition-colors group ${!isComplete ? 'bg-red-50/30' : ''}`}>
+                        <td className="px-5 py-4">
+                          <div className="flex items-start gap-2">
+                            {!isComplete && (
+                              <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={16} />
+                            )}
+                            <div>
+                              <p className="font-bold text-[#0F2E6A] group-hover:text-blue-700 transition-colors leading-tight">
+                                {r.resource_name || <span className="text-gray-400 italic">Untitled</span>}
+                              </p>
+                              {r.keywords && (
+                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{r.keywords}</p>
+                              )}
+                              {!isComplete && (
+                                <p className="text-xs text-red-600 font-semibold mt-1">
+                                  Missing: {missingFields.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 hidden md:table-cell">
+                          <span className="text-sm text-gray-600">{deptName(r.department_id)}</span>
+                        </td>
+                        <td className="px-5 py-4 hidden lg:table-cell">
+                          <span className="text-sm text-gray-500">{r.location || <span className="text-gray-300 italic">—</span>}</span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {isComplete ? (
+                            <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">
+                              <CheckCircle size={12} /> Complete
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">
+                              <AlertTriangle size={12} /> Incomplete
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-flex items-center gap-1 text-gray-500 text-xs font-semibold">
+                            <TrendingUp size={12} className="text-green-400" />
+                            {r.view_count ?? 0}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              to={`/admin/edit/${r.id}`}
+                              className="inline-flex items-center gap-1 bg-blue-50 hover:bg-[#0F2E6A] hover:text-white text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                            >
+                              <Edit3 size={13} /> Edit
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(r.id, r.resource_name)}
+                              disabled={deletingId === r.id}
+                              className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-600 hover:text-white text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                            >
+                              <Trash2 size={13} /> {deletingId === r.id ? "..." : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
