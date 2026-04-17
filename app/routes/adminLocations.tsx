@@ -5,6 +5,7 @@ import {
   Trash2, CheckCircle, AlertCircle, Check
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 type LocationEntry = {
   name: string;
@@ -38,8 +39,8 @@ export default function AdminLocations() {
 
   const fetchData = () => {
     Promise.all([
-      fetch("/api/locations").then((r) => r.json()),
-      fetch("/api/resources").then((r) => r.json()),
+      adminFetch("/api/locations").then((r) => r.json()),
+      adminFetch("/api/resources").then((r) => r.json()),
     ])
       .then(([locations, resources]: [string[], any[]]) => {
         setAllResources(resources);
@@ -95,7 +96,7 @@ export default function AdminLocations() {
       
       // Update all resources with this location
       const updatePromises = resourcesWithLocation.map(resource =>
-        fetch(`/api/resources/${resource.id}`, {
+        adminFetch(`/api/resources/${resource.id}`, {
           method: "PUT",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -124,7 +125,7 @@ export default function AdminLocations() {
 
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/resources/${resource.id}`, {
+      const res = await adminFetch(`/api/resources/${resource.id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -151,7 +152,7 @@ export default function AdminLocations() {
 
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/resources/${resourceId}`, {
+      const res = await adminFetch(`/api/resources/${resourceId}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
