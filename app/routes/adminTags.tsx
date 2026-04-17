@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Tag, Search, Hash, Plus, X, AlertCircle, CheckCircle, ChevronDown, Pencil, Trash2, Check } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 type KeywordEntry = {
   keyword: string;
@@ -42,7 +43,7 @@ export default function AdminTags() {
 
   const fetchData = () => {
     setLoading(true);
-    fetch("/api/resources")
+    adminFetch("/api/resources")
       .then((r) => r.json())
       .then((resources: any[]) => {
         setAllResources(resources);
@@ -112,7 +113,7 @@ export default function AdminTags() {
     }
 
     try {
-      const res = await fetch(`/api/resources/${resourceId}`, {
+      const res = await adminFetch(`/api/resources/${resourceId}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -161,7 +162,7 @@ export default function AdminTags() {
     );
 
     try {
-      const res = await fetch(`/api/resources/${resourceId}`, {
+      const res = await adminFetch(`/api/resources/${resourceId}`, {
         method: "PUT",
          headers: {
             "Authorization": `Bearer ${localStorage.getItem("admin_token")}`,
@@ -216,7 +217,7 @@ export default function AdminTags() {
           k.toLowerCase() === oldKeyword.toLowerCase() ? newKeyword : k
         );
 
-        return fetch(`/api/resources/${resource.id}`, {
+        return adminFetch(`/api/resources/${resource.id}`, {
           method: "PUT",
           headers: {
             "Authorization": `Bearer ${token}`,

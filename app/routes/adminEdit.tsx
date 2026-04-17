@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { ChevronLeft, Save, Lock, LayoutGrid, MapPin } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 export default function AdminEdit() {
   const { id } = useParams();
@@ -35,7 +36,7 @@ export default function AdminEdit() {
 
   useEffect(() => {
     // Always fetch departments for the dropdown
-    fetch("/api/departments")
+    adminFetch("/api/departments")
       .then((res) => res.json())
       .then((data) => setDepartments(data))
       .catch((err) => console.error("Dept Fetch Error:", err));
@@ -62,7 +63,7 @@ export default function AdminEdit() {
 
       // Only fetch existing resource data when editing
     if (isEditing) {
-      fetch(`/api/resources/${id}`)
+      adminFetch(`/api/resources/${id}`)
         .then((res) => res.json())
         .then((data) => {
           setFormData({
@@ -99,7 +100,7 @@ export default function AdminEdit() {
     const token = localStorage.getItem("admin_token");
 
     try {
-      const response = await fetch(url, {
+      const response = await adminFetch(url, {
         method,
          headers: {
           "Authorization": `Bearer ${token}`,

@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router";
 import {
   BookOpen, Search, Edit3, Trash2, Eye, TrendingUp,
   ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle,
-  Plus, LayoutGrid, Building2, MapPin, Tag, Lightbulb
+  LayoutGrid
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 type Resource = {
   id: number;
@@ -46,29 +47,32 @@ export default function AdminSelect() {
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
     if (!token) navigate("/admin-login");
-  }, []);
+  }, [navigate]);
 
   const fetchAll = () => {
       setLoading(true);
       const token = localStorage.getItem("admin_token");
 
       Promise.all([
-        fetch("/api/auth/all", {
+        adminFetch("/api/auth/all", {
           headers: { "Authorization": `Bearer ${token}` }
         }).then((r) => r.json()),
-        fetch("/api/auth/stats", {
+        adminFetch("/api/auth/stats", {
           headers: { "Authorization": `Bearer ${token}` }
         }).then((r) => r.json()),
-        fetch("/api/departments", {
+        adminFetch("/api/departments", {
           headers: { "Authorization": `Bearer ${token}` }
         }).then((r) => r.json()),
       ])
       .then(([res, s, depts]) => {
         setResources(Array.isArray(res) ? res : []);
         setStats(s);
-        setDepartments(depts);
+        setDepartments(Array.isArray(depts) ? depts : []);
       })
-      .catch(() => showToast("Failed to load dashboard data.", "error"))
+      .catch((err) => {
+          console.error("Dashboard Fetch Error:", err);
+          showToast("Failed to load dashboard data.", "error");
+      })
       .finally(() => setLoading(false));
   };
 
@@ -79,25 +83,30 @@ export default function AdminSelect() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const token = localStorage.getItem("admin_token");
-  
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    
+    const token = localStorage.getItem("admin_token");
     setDeletingId(id);
+    
     try {
-      const res = await fetch(`/api/resources/${id}`, {
+      const res = await adminFetch(`/api/resources/${id}`, {
         method: "DELETE",
         headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
       });
+
       if (res.ok) {
         showToast(`"${name}" deleted successfully.`, "success");
         setResources((prev) => prev.filter((r) => r.id !== id));
+        // Update stats locally to reflect deletion immediately
         setStats((prev) => prev ? { ...prev, totalResources: prev.totalResources - 1 } : prev);
+      } else if (res.status === 401 || res.status === 403) {
+        showToast("Session expired. Please log in again.", "error");
       } else {
-        showToast("Delete failed. Check your connection.", "error");
+        showToast("Delete failed. Server error.", "error");
       }
     } catch {
       showToast("Connection error.", "error");
@@ -106,8 +115,6 @@ export default function AdminSelect() {
     }
   };
 
-  // Check if resource is complete (ready for publishing)
-  // Required fields: resource_name, keywords (tags), description
   const isResourceComplete = (r: Resource): boolean => {
     return !!(
       r.resource_name?.trim() &&
@@ -121,34 +128,29 @@ export default function AdminSelect() {
   }, [resources]);
 
   const filtered = useMemo(() => {
-    let filtered = resources;
+    let filteredList = resources;
 
-    // Filter by incomplete status
     if (showIncompleteOnly) {
-      filtered = filtered.filter(r => !isResourceComplete(r));
+      filteredList = filteredList.filter(r => !isResourceComplete(r));
     }
 
-    // Filter by search
     if (search) {
-      filtered = filtered.filter((r) => {
-        const searchLower = search.toLowerCase();
-        return (
-          r.resource_name?.toLowerCase().includes(searchLower) ||
-          r.description?.toLowerCase().includes(searchLower) ||
-          r.keywords?.toLowerCase().includes(searchLower) ||
-          r.location?.toLowerCase().includes(searchLower)
-        );
-      });
+      const searchLower = search.toLowerCase();
+      filteredList = filteredList.filter((r) => 
+        r.resource_name?.toLowerCase().includes(searchLower) ||
+        r.description?.toLowerCase().includes(searchLower) ||
+        r.keywords?.toLowerCase().includes(searchLower) ||
+        r.location?.toLowerCase().includes(searchLower)
+      );
     }
 
-    // Filter by department
     if (deptFilter !== "all") {
-      filtered = filtered.filter(r => 
+      filteredList = filteredList.filter(r => 
         deptFilter === "none" ? !r.department_id : String(r.department_id) === deptFilter
       );
     }
 
-    return filtered;
+    return filteredList;
   }, [resources, search, deptFilter, showIncompleteOnly]);
 
   const deptName = (id: number | null) =>
@@ -178,7 +180,6 @@ export default function AdminSelect() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Toast */}
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold transition-all ${
@@ -193,7 +194,6 @@ export default function AdminSelect() {
       <AdminNav />
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
@@ -234,7 +234,7 @@ export default function AdminSelect() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Incomplete Resources</p>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Incomplete</p>
                 <p className="text-3xl font-black text-red-600">{incompleteResources.length}</p>
               </div>
               <div className="p-3 bg-red-50 rounded-xl">
@@ -244,71 +244,60 @@ export default function AdminSelect() {
           </div>
         </div>
 
-        {/* Incomplete Resources Alert */}
         {incompleteResources.length > 0 && !showIncompleteOnly && (
           <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-5 flex items-start gap-4 mb-6">
-            <div className="p-2 bg-red-100 rounded-lg">
+            <div className="p-2 bg-red-100 rounded-lg shrink-0">
               <AlertTriangle className="text-red-600" size={24} />
             </div>
             <div className="flex-1">
               <p className="font-black text-red-800 text-lg mb-1">
                 {incompleteResources.length} Resource{incompleteResources.length !== 1 ? "s" : ""} Need Attention
               </p>
-              <p className="text-sm text-red-700 mb-3">
-                These resources are missing required fields (Name, Description, or Tags) and cannot be published to the main site.
+              <p className="text-sm text-red-700 mb-3 font-medium">
+                Missing required fields: Name, Description, or Tags. These will appear highlighted in red below.
               </p>
               <button
                 onClick={() => setShowIncompleteOnly(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95"
               >
-                View Incomplete Resources
+                Filter Incomplete Only
               </button>
             </div>
           </div>
         )}
 
-        {/* Resource Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* Table Header */}
           <div className="p-5 border-b border-gray-100">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
               <h2 className="font-black text-gray-800 text-xl flex items-center gap-2">
                 <LayoutGrid size={24} className="text-[#EDB920]" />
-                {showIncompleteOnly ? `Incomplete Resources (${filtered.length})` : `All Resources (${filtered.length})`}
+                {showIncompleteOnly ? "Incomplete Resources" : "Resource Management"}
+                <span className="ml-2 px-2.5 py-0.5 bg-gray-100 text-gray-500 rounded-lg text-sm">{filtered.length}</span>
               </h2>
               {showIncompleteOnly && (
                 <button
                   onClick={() => setShowIncompleteOnly(false)}
                   className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors"
                 >
-                  <X size={16} /> Show All Resources
+                  <X size={16} /> Show All
                 </button>
               )}
             </div>
 
-            {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
-                  className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#EDB920] focus:ring-2 focus:ring-yellow-100 transition-all"
-                  placeholder="Search name, keywords, location..."
+                  className="w-full pl-12 pr-10 py-3.5 border border-gray-200 rounded-xl bg-gray-50/50 focus:bg-white focus:outline-none focus:border-[#EDB920] focus:ring-4 focus:ring-yellow-50 transition-all"
+                  placeholder="Search name, tags, location..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                {search && (
-                  <button 
-                    onClick={() => setSearch("")} 
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
               </div>
               
               <div className="relative">
                 <select
-                  className="appearance-none pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#EDB920] cursor-pointer w-full sm:w-auto"
+                  className="appearance-none pl-4 pr-10 py-3.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#EDB920] cursor-pointer min-w-[180px]"
                   value={deptFilter}
                   onChange={(e) => setDeptFilter(e.target.value)}
                 >
@@ -323,25 +312,24 @@ export default function AdminSelect() {
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-left">
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs">Resource</th>
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs hidden md:table-cell">Department</th>
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs hidden lg:table-cell">Location</th>
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-center">Status</th>
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-center">Views</th>
-                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-xs text-right">Actions</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-[10px]">Resource</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-[10px] hidden md:table-cell">Dept</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-[10px] text-center">Status</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-[10px] text-center">Views</th>
+                  <th className="px-5 py-3 font-bold text-gray-500 uppercase tracking-wider text-[10px] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
-                      <Search size={32} className="mx-auto mb-2 opacity-30" />
-                      <p className="font-semibold">No resources match your search.</p>
+                    <td colSpan={5} className="px-5 py-20 text-center text-gray-400">
+                      <Search size={48} className="mx-auto mb-4 opacity-10" />
+                      <p className="font-bold text-lg">No resources found</p>
+                      <p className="text-sm">Try adjusting your search or filters.</p>
                     </td>
                   </tr>
                 ) : (
@@ -350,64 +338,48 @@ export default function AdminSelect() {
                     const missingFields = getMissingFields(r);
 
                     return (
-                      <tr key={r.id} className={`hover:bg-gray-50 transition-colors group ${!isComplete ? 'bg-red-50/30' : ''}`}>
+                      <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors group ${!isComplete ? 'bg-red-50/40' : ''}`}>
                         <td className="px-5 py-4">
-                          <div className="flex items-start gap-2">
-                            {!isComplete && (
-                              <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={16} />
-                            )}
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${isComplete ? 'bg-green-400' : 'bg-red-500 animate-pulse'}`} />
                             <div>
-                              <p className="font-bold text-[#0F2E6A] group-hover:text-blue-700 transition-colors leading-tight">
-                                {r.resource_name || <span className="text-gray-400 italic">Untitled</span>}
+                              <p className="font-bold text-[#0F2E6A] group-hover:text-blue-800 transition-colors">
+                                {r.resource_name || <span className="text-gray-400 italic font-normal underline decoration-dotted">No Name Provided</span>}
                               </p>
-                              {r.keywords && (
-                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{r.keywords}</p>
-                              )}
                               {!isComplete && (
-                                <p className="text-xs text-red-600 font-semibold mt-1">
-                                  Missing: {missingFields.join(", ")}
+                                <p className="text-[10px] text-red-600 font-black uppercase mt-1 tracking-tighter">
+                                  Missing: {missingFields.join(" • ")}
                                 </p>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-5 py-4 hidden md:table-cell">
-                          <span className="text-sm text-gray-600">{deptName(r.department_id)}</span>
-                        </td>
-                        <td className="px-5 py-4 hidden lg:table-cell">
-                          <span className="text-sm text-gray-500">{r.location || <span className="text-gray-300 italic">—</span>}</span>
+                          <span className="text-xs font-medium text-gray-500">{deptName(r.department_id)}</span>
                         </td>
                         <td className="px-5 py-4 text-center">
-                          {isComplete ? (
-                            <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">
-                              <CheckCircle size={12} /> Complete
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">
-                              <AlertTriangle size={12} /> Incomplete
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          <span className="inline-flex items-center gap-1 text-gray-500 text-xs font-semibold">
-                            <TrendingUp size={12} className="text-green-400" />
-                            {r.view_count ?? 0}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide ${
+                            isComplete ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}>
+                            {isComplete ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                            {isComplete ? "Live" : "Draft"}
                           </span>
                         </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="font-mono text-gray-400 font-bold">{r.view_count ?? 0}</span>
+                        </td>
                         <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <Link
                               to={`/admin/edit/${r.id}`}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Edit"
+                              className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all"
                             >
                               <Edit3 size={18} />
                             </Link>
                             <button
                               onClick={() => handleDelete(r.id, r.resource_name)}
                               disabled={deletingId === r.id}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                              title="Delete"
+                              className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-xl transition-all disabled:opacity-20"
                             >
                               <Trash2 size={18} />
                             </button>
@@ -420,12 +392,6 @@ export default function AdminSelect() {
               </tbody>
             </table>
           </div>
-
-          {filtered.length > 0 && (
-            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400 font-medium">
-              Showing {filtered.length} of {resources.length} resources
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   Clock, Link as LinkIcon, AlertCircle, Zap
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 type Toast = { msg: string; type: "success" | "error" } | null;
 
@@ -25,7 +26,7 @@ export default function AdminSuggestions() {
     const token = localStorage.getItem("admin_token");
     setLoading(true); // Ensure loading starts
     
-    fetch("/api/suggestions", {
+    adminFetch("/api/suggestions", {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => {
@@ -67,7 +68,7 @@ export default function AdminSuggestions() {
 
     try {
       // Create the resource
-      const createRes = await fetch("/api/resources", {
+      const createRes = await adminFetch("/api/resources", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -89,7 +90,7 @@ export default function AdminSuggestions() {
 
       if (createRes.ok) {
         // Delete the suggestion
-        await fetch(`/api/suggestions/${sug.id}`, { method: "DELETE" });
+        await adminFetch(`/api/suggestions/${sug.id}`, { method: "DELETE" });
         
         showToast(`"${sug.resource_name}" published successfully!`, "success");
         setSuggestions(prev => prev.filter(s => s.id !== sug.id));
@@ -104,14 +105,25 @@ export default function AdminSuggestions() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Discard suggestion for "${name}"?`)) return;
-    
+  if (!confirm(`Discard suggestion for "${name}"?`)) return;
+  
+    const token = localStorage.getItem("admin_token"); // Get the token
     setProcessing(id);
+
     try {
-      const res = await fetch(`/api/suggestions/${id}`, { method: "DELETE" });
+      const res = await adminFetch(`/api/suggestions/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`, // Pass the token here
+          "Content-Type": "application/json"
+        },
+      });
+
       if (res.ok) {
         setSuggestions(prev => prev.filter(s => s.id !== id));
         showToast("Suggestion discarded.", "success");
+      } else if (res.status === 403 || res.status === 401) {
+        showToast("Session expired. Please log in again.", "error");
       } else {
         showToast("Failed to delete suggestion.", "error");
       }

@@ -5,6 +5,7 @@ import {
   AlertCircle, CheckCircle, Search, ChevronDown
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
+import { adminFetch } from "../utils/api";
 
 type Department = { id: number; name: string; resource_count: number };
 type Resource = { id: number; resource_name: string; department_id: number | null };
@@ -38,8 +39,8 @@ export default function AdminDepartments() {
     try {
       const token = localStorage.getItem("admin_token");
       const [deptRes, resourceRes] = await Promise.all([
-        fetch("/api/departments"),
-        fetch("/api/resources")
+        adminFetch("/api/departments"),
+        adminFetch("/api/resources")
       ]);
       
       const depts = await deptRes.json();
@@ -68,7 +69,7 @@ export default function AdminDepartments() {
     setIsProcessing(true);
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch("/api/departments", {
+      const res = await adminFetch("/api/departments", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -98,7 +99,7 @@ export default function AdminDepartments() {
     
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/departments/${id}`, {
+      const res = await adminFetch(`/api/departments/${id}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -127,7 +128,7 @@ export default function AdminDepartments() {
 
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/departments/${dept.id}`, {
+      const res = await adminFetch(`/api/departments/${dept.id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -148,7 +149,7 @@ export default function AdminDepartments() {
 
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/resources/${resourceId}`, {
+      const res = await adminFetch(`/api/resources/${resourceId}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -175,7 +176,7 @@ export default function AdminDepartments() {
 
     try {
       const token = localStorage.getItem("admin_token");
-      const res = await fetch(`/api/resources/${resourceId}`, {
+      const res = await adminFetch(`/api/resources/${resourceId}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,
