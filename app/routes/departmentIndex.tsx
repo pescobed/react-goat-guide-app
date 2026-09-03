@@ -28,7 +28,7 @@ export default function DepartmentsIndex() {
       .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
-  const filtered = departments.filter(d =>
+  const filtered = (Array.isArray(departments) ? departments : []).filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase())
   );
 

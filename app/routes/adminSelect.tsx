@@ -50,30 +50,32 @@ export default function AdminSelect() {
   }, [navigate]);
 
   const fetchAll = () => {
-      setLoading(true);
-      const token = localStorage.getItem("admin_token");
+    setLoading(true);
+    const token = localStorage.getItem("admin_token");
 
-      Promise.all([
-        adminFetch("/api/auth/all", {
-          headers: { "Authorization": `Bearer ${token}` }
-        }).then((r) => r.json()),
-        adminFetch("/api/auth/stats", {
-          headers: { "Authorization": `Bearer ${token}` }
-        }).then((r) => r.json()),
-        adminFetch("/api/departments", {
-          headers: { "Authorization": `Bearer ${token}` }
-        }).then((r) => r.json()),
-      ])
-      .then(([res, s, depts]) => {
-        setResources(Array.isArray(res) ? res : []);
-        setStats(s);
-        setDepartments(Array.isArray(depts) ? depts : []);
-      })
-      .catch((err) => {
-          console.error("Dashboard Fetch Error:", err);
-          showToast("Failed to load dashboard data.", "error");
-      })
-      .finally(() => setLoading(false));
+    Promise.all([
+      adminFetch("/api/resources/admin/all", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
+      adminFetch("/api/auth/stats", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
+      adminFetch("/api/departments", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
+    ])
+    .then(([res, s, depts]) => {
+      // Unpack data array if backend wraps it in pagination object
+      const resourceList = Array.isArray(res) ? res : (res?.data || []);
+      setResources(resourceList);
+      setStats(s);
+      setDepartments(Array.isArray(depts) ? depts : []);
+    })
+    .catch((err) => {
+      console.error("Dashboard Fetch Error:", err);
+      showToast("Failed to load dashboard data.", "error");
+    })
+    .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchAll(); }, []);

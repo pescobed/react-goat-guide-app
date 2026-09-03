@@ -37,36 +37,49 @@ export default function AdminLocations() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const fetchData = () => {
-    Promise.all([
-      adminFetch("/api/locations").then((r) => r.json()),
-      adminFetch("/api/resources").then((r) => r.json()),
-    ])
-      .then(([locations, resources]: [string[], any[]]) => {
-        setAllResources(resources);
-        
-        const entries: LocationEntry[] = locations.map((locName) => {
-          const connectedResources = resources
-            .filter((r) => r.location === locName)
-            .map((r) => ({
-              id: r.id,
-              name: r.resource_name || "Untitled Resource",
-              fullResource: r,
-            }));
+const fetchData = () => {
+  Promise.all([
+    adminFetch("/api/locations").then((r) => r.json()),
+    adminFetch("/api/resources").then((r) => r.json()),
+  ])
+    .then(([rawLocations, rawResources]) => {
+      // Unpack resources array safely
+      const resources: any[] = Array.isArray(rawResources) 
+        ? rawResources 
+        : (rawResources?.data || []);
+      
+      setAllResources(resources);
 
-          return {
-            name: locName,
-            resourceCount: connectedResources.length,
-            resources: connectedResources,
-          };
-        });
+      // Extract raw locations array safely
+      const locationList: any[] = Array.isArray(rawLocations) 
+        ? rawLocations 
+        : (rawLocations?.data || []);
 
-        entries.sort((a, b) => b.resourceCount - a.resourceCount);
-        setLocationEntries(entries);
-      })
-      .catch(() => setError("Failed to load location data."))
-      .finally(() => setLoading(false));
-  };
+      const entries: LocationEntry[] = locationList.map((locItem) => {
+        // Support both plain string "Room 101" or location object { id: 1, name: "Room 101" }
+        const locName = typeof locItem === "string" ? locItem : locItem.name;
+
+        const connectedResources = resources
+          .filter((r) => r.location === locName)
+          .map((r) => ({
+            id: r.id,
+            name: r.resource_name || "Untitled Resource",
+            fullResource: r,
+          }));
+
+        return {
+          name: locName,
+          resourceCount: connectedResources.length,
+          resources: connectedResources,
+        };
+      });
+
+      entries.sort((a, b) => b.resourceCount - a.resourceCount);
+      setLocationEntries(entries);
+    })
+    .catch(() => setError("Failed to load location data."))
+    .finally(() => setLoading(false));
+};
 
   useEffect(() => { fetchData(); }, []);
 
