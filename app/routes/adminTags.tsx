@@ -14,7 +14,7 @@ interface Tag {
   name: string;
 }
 
-export const AdminTags: React.FC = () => {
+export default AdminTags: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [allResources, setAllResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

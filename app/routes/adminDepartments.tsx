@@ -17,7 +17,7 @@ interface Department {
   description?: string;
 }
 
-export const AdminDepartments: React.FC = () => {
+export default AdminDepartments: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allResources, setAllResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,32 +52,31 @@ export const AdminDepartments: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      const token = localStorage.getItem("admin_token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const [deptRes, resourceRes] = await Promise.all([
-        adminFetch("/api/departments"),
-        adminFetch("/api/resources"),
+        fetch("/api/departments", { headers }),
+        fetch("/api/resources", { headers }),
       ]);
 
-      if (!deptRes.ok || !resourceRes.ok) {
-        throw new Error("Failed to fetch department data.");
+      if (!deptRes.ok) {
+        throw new Error(`Departments request failed with status ${deptRes.status}`);
       }
 
       const rawDepts = await deptRes.json();
-      const rawResources = await resourceRes.json();
+      const rawResources = resourceRes.ok ? await resourceRes.json() : [];
 
-      // Safely extract arrays from paginated or flat JSON responses[cite: 14]
-      const deptList: Department[] = Array.isArray(rawDepts)
-        ? rawDepts
-        : rawDepts?.data || [];
-
-      const resourceList: Resource[] = Array.isArray(rawResources)
-        ? rawResources
-        : rawResources?.data || [];
-
-      setDepartments(deptList);
-      setAllResources(resourceList);
+      setDepartments(Array.isArray(rawDepts) ? rawDepts : rawDepts?.data || []);
+      setAllResources(Array.isArray(rawResources) ? rawResources : rawResources?.data || []);
     } catch (err: any) {
       console.error("Fetch Departments Error:", err);
-      setError("Unable to load departments. Please try refreshing.");
+      setError(err.message || "Unable to load department data.");
     } finally {
       setLoading(false);
     }
