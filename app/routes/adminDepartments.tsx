@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Toast } from "./Toast";
+import { Toast } from "../components/Toast";
 import { SkeletonLoader } from "./SkeletonLoader";
 
 interface Resource {
