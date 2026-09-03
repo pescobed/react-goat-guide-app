@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { ChevronLeft, Search } from 'lucide-react';
 
-export function meta({ params }: { params: { tagId: string } }) {
-  const title = params.tagId ? decodeURIComponent(params.tagId.charAt(0).toUpperCase() + params.tagId.slice(1)) : "Tag";
+export function meta({ params }: { params: { tagId?: string } }) {
+  const rawTag = params.tagId ? decodeURIComponent(params.tagId) : "Tag";
+  const title = rawTag.charAt(0).toUpperCase() + rawTag.slice(1);
   return [{ title: `${title} Resources - GOAT Guide` }];
 }
 
@@ -24,10 +25,24 @@ export default function TagDetail() {
   const displayTitle = currentTag.charAt(0).toUpperCase() + currentTag.slice(1);
 
   useEffect(() => {
+    let isMounted = true;
+
     fetch('/api/resources')
       .then(res => res.json())
-      .then((data: Resource[]) => { setResources(data); setLoading(false); })
-      .catch(err => { console.error(err); setLoading(false); });
+      .then((data: Resource[]) => { 
+        if (isMounted) {
+          setResources(data); 
+          setLoading(false); 
+        }
+      })
+      .catch(err => { 
+        console.error(err); 
+        if (isMounted) setLoading(false); 
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Match resources whose keywords contain this tag
