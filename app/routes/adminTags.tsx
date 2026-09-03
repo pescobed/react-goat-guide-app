@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Toast } from "../components/Toast";
-import { SkeletonLoader } from "./SkeletonLoader";
-
+import { SkeletonLoader } from "../components/SkeletonLoader";
 interface Resource {
   id: number;
   resource_name?: string;
