@@ -42,7 +42,7 @@ export default function adminNav() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              to="/admin/edit/add-resource"
+              to="/admin/add-resource"
               className="bg-[#EDB920] text-[#0F2E6A] px-4 py-2 rounded-lg font-black text-sm uppercase tracking-wide flex items-center gap-2 hover:bg-yellow-400 transition-colors"
             >
               <Plus size={16} /> Add Resource

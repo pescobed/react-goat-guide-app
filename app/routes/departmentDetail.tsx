@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { ChevronLeft, MapPin, Phone, Mail, Globe, Clock, ExternalLink } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 
 interface Resource {
   id: number;
@@ -32,14 +32,28 @@ export default function DepartmentDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
+
     fetch(`/api/departments/${departmentId}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
       })
-      .then(json => { setData(json); setLoading(false); })
-      .catch(err => { console.error(err); setLoading(false); });
+      .then(json => { 
+        if (isMounted) {
+          setData(json); 
+          setLoading(false); 
+        }
+      })
+      .catch(err => { 
+        console.error(err); 
+        if (isMounted) setLoading(false); 
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [departmentId]);
 
   if (loading) return (

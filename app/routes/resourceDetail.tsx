@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
-import { ChevronLeft, ExternalLink, Mail, MapPin, Phone, Globe, Clock, Tag } from 'lucide-react';
+import { ChevronLeft, ExternalLink, Mail, MapPin, Phone, Globe, Clock } from 'lucide-react';
 
 interface Resource {
   id: number;
@@ -22,54 +22,83 @@ const ResourceDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!resourceId) return;
+
+    let isSubscribed = true;
     setLoading(true);
+
     fetch(`/api/resources/${resourceId}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
       })
-      .then(json => { setData(json); setLoading(false); 
-        fetch(`/api/resources/${resourceId}/view`, { method: 'PATCH' });
+      .then((json) => {
+        if (isSubscribed) {
+          setData(json);
+          setLoading(false);
+        }
+        // Fire-and-forget view counter update safely
+        fetch(`/api/resources/${resourceId}/view`, { method: 'PATCH' }).catch(() => {});
       })
-      .catch(err => { console.error(err); setLoading(false); });
+      .catch((err) => {
+        console.error(err);
+        if (isSubscribed) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [resourceId]);
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-500 text-lg">Loading...</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500 text-lg">Loading...</p>
+      </div>
+    );
+  }
 
-  if (!data) return (
-    <div className="text-center py-20 px-4">
-      <h2 className="text-3xl font-extrabold text-gray-900">Resource Not Found</h2>
-      <p className="text-gray-600 mt-2">The resource you are looking for does not exist.</p>
-      <button onClick={() => window.history.back()} className="mt-4 px-4 py-2 bg-[#0F2E6A] text-white rounded hover:bg-blue-700">
-        Go Back
-      </button>
-    </div>
-  );
+  if (!data) {
+    return (
+      <div className="text-center py-20 px-4">
+        <h2 className="text-3xl font-extrabold text-gray-900">Resource Not Found</h2>
+        <p className="text-gray-600 mt-2">The resource you are looking for does not exist.</p>
+        <button 
+          onClick={() => window.history.back()} 
+          className="mt-4 px-4 py-2 bg-[#0F2E6A] text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
   // Parse keywords into tag array
-  const tags = (data.keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+  const tags = (data.keywords || '').split(',').map((k) => k.trim()).filter(Boolean);
 
   // Build contact info rows from whatever columns are populated
   const contactItems = [
     data.location && { icon: MapPin, label: 'Location', value: data.location, link: undefined },
-    data.phone    && { icon: Phone,  label: 'Phone',    value: data.phone,    link: `tel:${data.phone}` },
-    data.email    && { icon: Mail,   label: 'Email',    value: data.email,    link: `mailto:${data.email}` },
-    data.socials  && { icon: Globe,  label: 'Socials',  value: data.socials,  link: data.socials.startsWith('http') ? data.socials : undefined },
-    data.hours    && { icon: Clock,  label: 'Hours',    value: data.hours,    link: undefined },
+    data.phone && { icon: Phone, label: 'Phone', value: data.phone, link: `tel:${data.phone}` },
+    data.email && { icon: Mail, label: 'Email', value: data.email, link: `mailto:${data.email}` },
+    data.socials && { 
+      icon: Globe, 
+      label: 'Socials', 
+      value: data.socials, 
+      link: data.socials.startsWith('http') ? data.socials : `https://${data.socials}` 
+    },
+    data.hours && { icon: Clock, label: 'Hours', value: data.hours, link: undefined },
   ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; link?: string }[];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased text-gray-900">
-
       {/* Hero Banner */}
       <div className="bg-[#C3E3F6] border-t border-b border-blue-200 py-12 md:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <button
-            className="flex items-center text-[#0F2E6A] font-medium mb-6 hover:text-indigo-900 transition-colors"
+            className="flex items-center text-[#0F2E6A] font-medium mb-6 hover:text-indigo-900 transition-colors cursor-pointer"
             onClick={() => window.history.back()}
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
@@ -91,10 +120,11 @@ const ResourceDetail: React.FC = () => {
       {/* Main Content */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
           {/* Left: Description */}
           <div className="lg:col-span-2 pr-0 lg:pr-8 border-r-0 lg:border-r border-gray-200">
-            <p className="text-lg text-gray-700 mb-8 leading-relaxed">{data.description}</p>
+            <p className="text-lg text-gray-700 mb-8 leading-relaxed whitespace-pre-line">
+              {data.description}
+            </p>
 
             {/* CTA Button */}
             {data.cta_link && (
@@ -122,7 +152,12 @@ const ResourceDetail: React.FC = () => {
                       {item.label}
                     </p>
                     {item.link ? (
-                      <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-[#0F2E6A] hover:text-indigo-800 underline text-base font-medium break-all">
+                      <a 
+                        href={item.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[#0F2E6A] hover:text-indigo-800 underline text-base font-medium break-all"
+                      >
                         {item.value}
                       </a>
                     ) : (

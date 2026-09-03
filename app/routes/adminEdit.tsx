@@ -34,6 +34,23 @@ export default function AdminEdit() {
   }, [navigate]);
 
   useEffect(() => {
+    // Reset form data if navigating from edit mode to add mode
+    if (!isEditing) {
+      setFormData({
+        resource_name: "",
+        description: "",
+        location: "",
+        keywords: "",
+        phone: "",
+        email: "",
+        socials: "",
+        hours: "",
+        cta_link: "",
+        department_id: "",
+      });
+      setLoading(false);
+    }
+
     // Fetch departments for the dropdown
     adminFetch("/api/departments")
       .then((res) => res.json())
@@ -62,6 +79,7 @@ export default function AdminEdit() {
 
     // Fetch existing resource data if in Edit mode
     if (isEditing) {
+      setLoading(true);
       adminFetch(`/api/resources/${id}`)
         .then((res) => res.json())
         .then((data) => {
@@ -99,7 +117,6 @@ export default function AdminEdit() {
     const token = localStorage.getItem("admin_token");
 
     try {
-      // adminFetch automatically attaches the token and handles 401 redirects
       const response = await adminFetch(url, {
         method,
         headers: {
@@ -296,7 +313,6 @@ export default function AdminEdit() {
           </div>
 
           {/* Action Footer */}
-          {/* BOTTOM ACTION BAR */}
           <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400 font-medium">
