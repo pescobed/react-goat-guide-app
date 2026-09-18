@@ -5,7 +5,6 @@ import {
   Calendar, Mail, Phone, MapPin, Building2, Tag as TagIcon,
   Clock, Link as LinkIcon, AlertCircle, Zap
 } from "lucide-react";
-import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
 
 type Toast = { msg: string; type: "success" | "error" } | null;
@@ -23,32 +22,26 @@ export default function AdminSuggestions() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    setLoading(true); // Ensure loading starts
-    
-    adminFetch("/api/suggestions", {
-      headers: { "Authorization": `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Unauthorized");
+    setLoading(true);
+
+    adminFetch("/api/suggestions")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch suggestions");
         return res.json();
       })
-      .then(data => setSuggestions(data))
-      .catch(err => {
+      .then((data) => setSuggestions(Array.isArray(data) ? data : []))
+      .catch((err) => {
         console.error(err);
-        showToast("Session expired. Please login again.", "error");
+        showToast("Failed to load suggestions.", "error");
       })
-      .finally(() => setLoading(false)); // Always stop loading
+      .finally(() => setLoading(false));
   }, []);
 
   const handleEditReview = (sug: any) => {
-    // Navigate to the add-resource page and pass the suggestion data
-    navigate("/admin/edit/add-resource", { state: { suggestionData: sug } });
+    navigate("/admin/add-resource", { state: { suggestionData: sug } });
   };
 
   const handleQuickApprove = async (sug: any) => {
-    // Check if suggestion has all required fields
-    const token = localStorage.getItem("admin_token");
     const isComplete = !!(
       sug.resource_name?.trim() &&
       sug.description?.trim() &&
@@ -67,13 +60,8 @@ export default function AdminSuggestions() {
     setProcessing(sug.id);
 
     try {
-      // Create the resource
       const createRes = await adminFetch("/api/resources", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
         body: JSON.stringify({
           resource_name: sug.resource_name,
           description: sug.description,
@@ -84,16 +72,15 @@ export default function AdminSuggestions() {
           socials: "",
           hours: sug.hours || "",
           cta_link: sug.cta_link || "",
-          department_id: null, // User suggested name, admin needs to assign proper ID
+          department_id: null,
         }),
       });
 
       if (createRes.ok) {
-        // Delete the suggestion
         await adminFetch(`/api/suggestions/${sug.id}`, { method: "DELETE" });
-        
+
         showToast(`"${sug.resource_name}" published successfully!`, "success");
-        setSuggestions(prev => prev.filter(s => s.id !== sug.id));
+        setSuggestions((prev) => prev.filter((s) => s.id !== sug.id));
       } else {
         showToast("Failed to create resource.", "error");
       }
@@ -105,22 +92,17 @@ export default function AdminSuggestions() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-  if (!confirm(`Discard suggestion for "${name}"?`)) return;
-  
-    const token = localStorage.getItem("admin_token"); // Get the token
+    if (!confirm(`Discard suggestion for "${name}"?`)) return;
+
     setProcessing(id);
 
     try {
       const res = await adminFetch(`/api/suggestions/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`, // Pass the token here
-          "Content-Type": "application/json"
-        },
       });
 
       if (res.ok) {
-        setSuggestions(prev => prev.filter(s => s.id !== id));
+        setSuggestions((prev) => prev.filter((s) => s.id !== id));
         showToast("Suggestion discarded.", "success");
       } else if (res.status === 403 || res.status === 401) {
         showToast("Session expired. Please log in again.", "error");
@@ -136,19 +118,20 @@ export default function AdminSuggestions() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminNav />
-        <div className="p-10 text-center">Loading Suggestions...</div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-[#0F2E6A] font-bold">Loading Suggestions...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Toast */}
+    <div>
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold ${
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold transition-all ${
             toast.type === "success" ? "bg-green-600" : "bg-red-600"
           }`}
         >
@@ -157,11 +140,7 @@ export default function AdminSuggestions() {
         </div>
       )}
 
-      {/* Admin Navigation */}
-      <AdminNav />
-
       <div className="max-w-6xl mx-auto p-6">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-[#0F2E6A] rounded-xl">
             <Inbox className="text-[#EDB920]" size={24} />
@@ -174,7 +153,6 @@ export default function AdminSuggestions() {
           </div>
         </div>
 
-        {/* Empty State */}
         {suggestions.length === 0 && (
           <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
             <Inbox className="mx-auto mb-4 text-gray-300" size={48} />
@@ -182,7 +160,6 @@ export default function AdminSuggestions() {
           </div>
         )}
 
-        {/* Suggestions Grid */}
         <div className="grid gap-6">
           {suggestions.map((sug) => {
             const isProcessing = processing === sug.id;
@@ -193,16 +170,17 @@ export default function AdminSuggestions() {
             );
 
             return (
-              <div 
-                key={sug.id} 
+              <div
+                key={sug.id}
                 className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all ${
                   isComplete ? "border-green-200" : "border-yellow-200"
                 }`}
               >
-                {/* Header Bar */}
-                <div className={`px-6 py-3 flex items-center justify-between ${
-                  isComplete ? "bg-green-50" : "bg-yellow-50"
-                }`}>
+                <div
+                  className={`px-6 py-3 flex items-center justify-between ${
+                    isComplete ? "bg-green-50" : "bg-yellow-50"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     {isComplete ? (
                       <>
@@ -227,20 +205,16 @@ export default function AdminSuggestions() {
                 </div>
 
                 <div className="p-6">
-                  {/* Resource Name */}
                   <h3 className="text-2xl font-black text-[#0F2E6A] mb-4">
                     {sug.resource_name || <span className="text-gray-400 italic">Untitled Resource</span>}
                   </h3>
 
-                  {/* Two Column Layout */}
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    {/* Left Column - Resource Details */}
                     <div className="space-y-4">
                       <h4 className="text-sm font-black text-gray-700 uppercase tracking-wider border-b pb-2">
                         Resource Information
                       </h4>
 
-                      {/* Department */}
                       <div className="flex items-start gap-3">
                         <Building2 className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
@@ -251,7 +225,6 @@ export default function AdminSuggestions() {
                         </div>
                       </div>
 
-                      {/* Location */}
                       <div className="flex items-start gap-3">
                         <MapPin className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
@@ -262,7 +235,6 @@ export default function AdminSuggestions() {
                         </div>
                       </div>
 
-                      {/* Keywords */}
                       {sug.keywords && (
                         <div className="flex items-start gap-3">
                           <TagIcon className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
@@ -273,7 +245,6 @@ export default function AdminSuggestions() {
                         </div>
                       )}
 
-                      {/* Hours */}
                       {sug.hours && (
                         <div className="flex items-start gap-3">
                           <Clock className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
@@ -285,13 +256,11 @@ export default function AdminSuggestions() {
                       )}
                     </div>
 
-                    {/* Right Column - Contact & User Info */}
                     <div className="space-y-4">
                       <h4 className="text-sm font-black text-gray-700 uppercase tracking-wider border-b pb-2">
                         Contact & Submission Info
                       </h4>
 
-                      {/* Phone */}
                       {sug.phone && (
                         <div className="flex items-start gap-3">
                           <Phone className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
@@ -302,7 +271,6 @@ export default function AdminSuggestions() {
                         </div>
                       )}
 
-                      {/* Email */}
                       {sug.email && (
                         <div className="flex items-start gap-3">
                           <Mail className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
@@ -313,15 +281,14 @@ export default function AdminSuggestions() {
                         </div>
                       )}
 
-                      {/* CTA Link */}
                       {sug.cta_link && (
                         <div className="flex items-start gap-3">
                           <LinkIcon className="text-[#EDB920] shrink-0 mt-0.5" size={16} />
                           <div className="flex-1">
                             <p className="text-xs text-gray-500 font-semibold">Website/Link</p>
-                            <a 
-                              href={sug.cta_link} 
-                              target="_blank" 
+                            <a
+                              href={sug.cta_link}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="text-sm text-blue-600 hover:underline break-all"
                             >
@@ -331,7 +298,6 @@ export default function AdminSuggestions() {
                         </div>
                       )}
 
-                      {/* Submitted By */}
                       <div className="flex items-start gap-3 pt-2 border-t">
                         <User className="text-gray-400 shrink-0 mt-0.5" size={16} />
                         <div className="flex-1">
@@ -344,7 +310,6 @@ export default function AdminSuggestions() {
                     </div>
                   </div>
 
-                  {/* Description */}
                   {sug.description && (
                     <div className="mb-6">
                       <h4 className="text-sm font-black text-gray-700 uppercase tracking-wider mb-2">Description</h4>
@@ -354,7 +319,6 @@ export default function AdminSuggestions() {
                     </div>
                   )}
 
-                  {/* Admin Comments */}
                   {sug.admin_comments && (
                     <div className="mb-6">
                       <h4 className="text-sm font-black text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -366,10 +330,9 @@ export default function AdminSuggestions() {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3 pt-4 border-t">
                     {isComplete && (
-                      <button 
+                      <button
                         onClick={() => handleQuickApprove(sug)}
                         disabled={isProcessing}
                         className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
@@ -378,7 +341,7 @@ export default function AdminSuggestions() {
                         {isProcessing ? "Publishing..." : "Quick Approve & Publish"}
                       </button>
                     )}
-                    <button 
+                    <button
                       onClick={() => handleEditReview(sug)}
                       disabled={isProcessing}
                       className="flex items-center gap-2 bg-[#0F2E6A] hover:bg-blue-800 text-white px-6 py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
@@ -386,7 +349,7 @@ export default function AdminSuggestions() {
                       <CheckCircle size={18} />
                       {isComplete ? "Review Before Publishing" : "Review & Edit"}
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(sug.id, sug.resource_name)}
                       disabled={isProcessing}
                       className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-6 py-3 rounded-xl font-bold transition-colors disabled:opacity-50"
@@ -396,14 +359,13 @@ export default function AdminSuggestions() {
                     </button>
                   </div>
 
-                  {/* Missing fields warning */}
                   {!isComplete && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
                       <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={16} />
                       <div className="text-xs text-yellow-800">
                         <p className="font-bold mb-1">Missing Required Fields</p>
                         <p>
-                          This suggestion needs: 
+                          This suggestion needs:
                           {!sug.resource_name?.trim() && " Resource Name"}
                           {!sug.description?.trim() && " Description"}
                           {!sug.location?.trim() && " Location"}
