@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import {
-  BookOpen, Search, Edit3, Trash2, Eye, TrendingUp,
+  BookOpen, Search, Edit3, Trash2, Eye,
   ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle,
   LayoutGrid
 } from "lucide-react";
-import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
 
 type Resource = {
@@ -32,7 +31,6 @@ type Department = { id: number; name: string };
 type Toast = { msg: string; type: "success" | "error" } | null;
 
 export default function AdminSelect() {
-  const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -43,29 +41,15 @@ export default function AdminSelect() {
   const [toast, setToast] = useState<Toast>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // Auth guard
-  useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (!token) navigate("/admin-login");
-  }, [navigate]);
-
   const fetchAll = () => {
     setLoading(true);
-    const token = localStorage.getItem("admin_token");
 
     Promise.all([
-      adminFetch("/api/resources/admin/all", {
-        headers: { "Authorization": `Bearer ${token}` }
-      }).then((r) => r.json()),
-      adminFetch("/api/auth/stats", {
-        headers: { "Authorization": `Bearer ${token}` }
-      }).then((r) => r.json()),
-      adminFetch("/api/departments", {
-        headers: { "Authorization": `Bearer ${token}` }
-      }).then((r) => r.json()),
+      adminFetch("/api/resources/admin/all").then((r) => r.json()),
+      adminFetch("/api/auth/stats").then((r) => r.json()),
+      adminFetch("/api/departments").then((r) => r.json()),
     ])
     .then(([res, s, depts]) => {
-      // Unpack data array if backend wraps it in pagination object
       const resourceList = Array.isArray(res) ? res : (res?.data || []);
       setResources(resourceList);
       setStats(s);
@@ -78,7 +62,9 @@ export default function AdminSelect() {
     .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { 
+    fetchAll(); 
+  }, []);
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
@@ -88,22 +74,16 @@ export default function AdminSelect() {
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     
-    const token = localStorage.getItem("admin_token");
     setDeletingId(id);
     
     try {
       const res = await adminFetch(`/api/resources/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
       });
 
       if (res.ok) {
         showToast(`"${name}" deleted successfully.`, "success");
         setResources((prev) => prev.filter((r) => r.id !== id));
-        // Update stats locally to reflect deletion immediately
         setStats((prev) => prev ? { ...prev, totalResources: prev.totalResources - 1 } : prev);
       } else if (res.status === 401 || res.status === 403) {
         showToast("Session expired. Please log in again.", "error");
@@ -168,20 +148,17 @@ export default function AdminSelect() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminNav />
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-[#0F2E6A] font-bold">Loading Dashboard...</p>
-          </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-[#0F2E6A] font-bold">Loading Dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold transition-all ${
@@ -192,8 +169,6 @@ export default function AdminSelect() {
           {toast.msg}
         </div>
       )}
-
-      <AdminNav />
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
