@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
-  BookOpen, Search, Edit3, Trash2, Eye,
+  BookOpen, Search, Edit3, Trash2, Eye, TrendingUp,
   ChevronDown, X, AlertCircle, CheckCircle, AlertTriangle,
   LayoutGrid
 } from "lucide-react";
+import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
+import { unwrapList, getResourceTags } from "../utils/resourceHelpers";
 
 type Resource = {
   id: number;
@@ -14,7 +16,8 @@ type Resource = {
   location: string;
   department_id: number | null;
   view_count: number;
-  keywords: string;
+  keywords?: string;
+  tags?: string[];
   phone: string;
   email: string;
   cta_link: string;
@@ -31,6 +34,7 @@ type Department = { id: number; name: string };
 type Toast = { msg: string; type: "success" | "error" } | null;
 
 export default function AdminSelect() {
+  const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -41,19 +45,33 @@ export default function AdminSelect() {
   const [toast, setToast] = useState<Toast>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  // Auth guard
+  useEffect(() => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) navigate("/admin-login");
+  }, [navigate]);
+
   const fetchAll = () => {
     setLoading(true);
+    const token = localStorage.getItem("admin_token");
 
     Promise.all([
-      adminFetch("/api/resources/admin/all").then((r) => r.json()),
-      adminFetch("/api/auth/stats").then((r) => r.json()),
-      adminFetch("/api/departments").then((r) => r.json()),
+      adminFetch("/api/resources/admin/all", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
+      adminFetch("/api/auth/stats", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
+      adminFetch("/api/departments", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then((r) => r.json()),
     ])
     .then(([res, s, depts]) => {
-      const resourceList = Array.isArray(res) ? res : (res?.data || []);
-      setResources(resourceList);
+      // Unpack data array regardless of whether the backend wraps it in
+      // { data: [...] }, { success, data: [...] }, or a pagination object.
+      setResources(unwrapList<Resource>(res));
       setStats(s);
-      setDepartments(Array.isArray(depts) ? depts : []);
+      setDepartments(unwrapList<Department>(depts));
     })
     .catch((err) => {
       console.error("Dashboard Fetch Error:", err);
@@ -62,9 +80,7 @@ export default function AdminSelect() {
     .finally(() => setLoading(false));
   };
 
-  useEffect(() => { 
-    fetchAll(); 
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
@@ -74,16 +90,22 @@ export default function AdminSelect() {
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     
+    const token = localStorage.getItem("admin_token");
     setDeletingId(id);
     
     try {
       const res = await adminFetch(`/api/resources/${id}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
       });
 
       if (res.ok) {
         showToast(`"${name}" deleted successfully.`, "success");
         setResources((prev) => prev.filter((r) => r.id !== id));
+        // Update stats locally to reflect deletion immediately
         setStats((prev) => prev ? { ...prev, totalResources: prev.totalResources - 1 } : prev);
       } else if (res.status === 401 || res.status === 403) {
         showToast("Session expired. Please log in again.", "error");
@@ -97,11 +119,13 @@ export default function AdminSelect() {
     }
   };
 
+  // Works whether the resource has a `tags` array (new shape) or a
+  // `keywords` comma string (old shape) — see getResourceTags.
   const isResourceComplete = (r: Resource): boolean => {
     return !!(
       r.resource_name?.trim() &&
       r.description?.trim() &&
-      r.keywords?.trim()
+      getResourceTags(r).length > 0
     );
   };
 
@@ -121,8 +145,8 @@ export default function AdminSelect() {
       filteredList = filteredList.filter((r) => 
         r.resource_name?.toLowerCase().includes(searchLower) ||
         r.description?.toLowerCase().includes(searchLower) ||
-        r.keywords?.toLowerCase().includes(searchLower) ||
-        r.location?.toLowerCase().includes(searchLower)
+        r.location?.toLowerCase().includes(searchLower) ||
+        getResourceTags(r).some(tag => tag.toLowerCase().includes(searchLower))
       );
     }
 
@@ -142,23 +166,26 @@ export default function AdminSelect() {
     const missing: string[] = [];
     if (!r.resource_name?.trim()) missing.push("Name");
     if (!r.description?.trim()) missing.push("Description");
-    if (!r.keywords?.trim()) missing.push("Tags");
+    if (getResourceTags(r).length === 0) missing.push("Tags");
     return missing;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-[#0F2E6A] font-bold">Loading Dashboard...</p>
+      <div className="min-h-screen bg-gray-50">
+        <AdminNav />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#0F2E6A] font-bold">Loading Dashboard...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-white font-semibold transition-all ${
@@ -169,6 +196,8 @@ export default function AdminSelect() {
           {toast.msg}
         </div>
       )}
+
+      <AdminNav />
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

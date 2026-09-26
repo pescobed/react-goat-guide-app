@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { ChevronLeft, Search } from 'lucide-react';
+import { unwrapList, getResourceTags } from '../utils/resourceHelpers';
 
 export function meta({ params }: { params: { tagId?: string } }) {
   const rawTag = params.tagId ? decodeURIComponent(params.tagId) : "Tag";
@@ -12,7 +13,8 @@ interface Resource {
   id: number;
   resource_name: string;
   description: string;
-  keywords: string | null;
+  keywords?: string | null;
+  tags?: string[] | null;
   location: string | null;
 }
 
@@ -29,10 +31,10 @@ export default function TagDetail() {
 
     fetch('/api/resources')
       .then(res => res.json())
-      .then((data: Resource[]) => { 
+      .then((json) => {
         if (isMounted) {
-          setResources(data); 
-          setLoading(false); 
+          setResources(unwrapList<Resource>(json));
+          setLoading(false);
         }
       })
       .catch(err => { 
@@ -45,9 +47,9 @@ export default function TagDetail() {
     };
   }, []);
 
-  // Match resources whose keywords contain this tag
+  // Match resources whose tags contain this tag
   const filteredResources = resources.filter(r =>
-    (r.keywords || '').split(',').map(k => k.trim().toLowerCase()).includes(currentTag)
+    getResourceTags(r).map(t => t.toLowerCase()).includes(currentTag)
   );
 
   return (
@@ -92,7 +94,7 @@ export default function TagDetail() {
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold text-[#192E56] mb-2">No Resources Found</h2>
                 <p className="text-gray-600 mb-6">No resources are tagged with "{displayTitle}".</p>
-                <Link to="/" className="btn-primary">Browse All Resources</Link>
+                <Link to="/resources" className="btn-primary">Browse All Resources</Link>
               </div>
             </div>
           )}

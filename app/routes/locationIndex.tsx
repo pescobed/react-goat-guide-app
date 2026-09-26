@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import SearchBar from '../components/searchBar';
+import { unwrapList } from '../utils/resourceHelpers';
 
 interface Resource {
   id: number;
@@ -20,7 +21,8 @@ export default function LocationsIndex() {
   useEffect(() => {
     fetch('/api/resources')
       .then(res => res.json())
-      .then((data: Resource[]) => {
+      .then((json) => {
+        const data = unwrapList<Resource>(json);
         const uniqueRaw = Array.from(
           new Set(data.map(r => r.location?.trim()).filter(Boolean) as string[])
         );

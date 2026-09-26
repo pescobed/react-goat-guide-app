@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Route } from "./+types/home";
 import { Search, ChevronUp, Tag, LayoutGrid } from 'lucide-react';
+import { unwrapList, getResourceTags } from '../utils/resourceHelpers';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,7 +15,8 @@ interface Resource {
   id: number;
   resource_name: string;
   description: string;
-  keywords: string | null;
+  keywords?: string | null;
+  tags?: string[] | null;
   location: string | null;
   view_count: number;
 }
@@ -86,16 +88,16 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/resources')
       .then(res => res.json())
-      .then(data => setResources(data))
+      .then(json => setResources(unwrapList<Resource>(json)))
       .catch(err => console.error("Failed to fetch resources:", err));
   }, []);
 
   const allTags = Array.from(
-  new Set(
-    Array.isArray(resources) // Add this check
-      ? resources.flatMap(r => (r.keywords || '').split(',').map(k => k.trim()).filter(Boolean))
-      : []
-  )
+    new Set(
+      Array.isArray(resources)
+        ? resources.flatMap(r => getResourceTags(r))
+        : []
+    )
   ).sort();
 
   const filteredTags = allTags.filter(tag =>
@@ -107,8 +109,8 @@ export default function Home() {
     ? resources.filter(r =>
         r.resource_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.keywords?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.location?.toLowerCase().includes(searchQuery.toLowerCase())
+        r.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getResourceTags(r).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : [...resources].sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0)).slice(0, 6);
 

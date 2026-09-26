@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router";
 import { ChevronLeft, LayoutGrid, MapPin, CheckCircle } from "lucide-react";
+import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
+import { unwrapObject, unwrapList } from "../utils/resourceHelpers";
 
 export default function AdminEdit() {
   const { id } = useParams();
@@ -26,6 +28,12 @@ export default function AdminEdit() {
     department_id: "",
   });
 
+  // Auth guard: Ensure user is logged in before viewing this page
+  useEffect(() => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) navigate("/admin-login");
+  }, [navigate]);
+
   useEffect(() => {
     // Reset form data if navigating from edit mode to add mode
     if (!isEditing) {
@@ -47,9 +55,9 @@ export default function AdminEdit() {
     // Fetch departments for the dropdown
     adminFetch("/api/departments")
       .then((res) => res.json())
-      .then((data) => setDepartments(Array.isArray(data) ? data : []))
+      .then((json) => setDepartments(unwrapList<any>(json)))
       .catch((err) => console.error("Dept Fetch Error:", err));
-
+      
     // Handle suggestion promotion (pre-filling form from suggestion data)
     if (!isEditing && location.state?.suggestionData) {
       const sug = location.state.suggestionData;
@@ -60,7 +68,7 @@ export default function AdminEdit() {
         keywords: sug.keywords || "",
         phone: sug.phone || "",
         email: sug.email || "",
-        socials: "",
+        socials: "", 
         hours: sug.hours || "",
         cta_link: sug.cta_link || "",
         department_id: "",
@@ -75,12 +83,28 @@ export default function AdminEdit() {
       setLoading(true);
       adminFetch(`/api/resources/${id}`)
         .then((res) => res.json())
-        .then((data) => {
+        .then((json) => {
+          // Defensive: this endpoint may return the resource bare or
+          // wrapped as { data: {...} } depending on backend version.
+          const data = unwrapObject<any>(json) || {};
+
+          // The backend has been migrating from a `keywords` comma string
+          // to a `tags` array. Prefer keywords if present (old shape),
+          // otherwise fall back to joining tags (new shape), so existing
+          // tags still show up in this field instead of appearing blank.
+          // NOTE: this form still *saves* as `keywords` — confirm with
+          // the backend what field name/shape the write endpoint expects
+          // for tags before relying on this for new data.
+          const keywordsValue =
+            data.keywords ||
+            (Array.isArray(data.tags) ? data.tags.join(", ") : "") ||
+            "";
+
           setFormData({
             resource_name: data.resource_name || "",
             description: data.description || "",
             location: data.location || "",
-            keywords: data.keywords || "",
+            keywords: keywordsValue,
             phone: data.phone || "",
             email: data.email || "",
             socials: data.socials || "",
@@ -88,17 +112,16 @@ export default function AdminEdit() {
             cta_link: data.cta_link || "",
             department_id: data.department_id ? String(data.department_id) : "",
           });
+          setLoading(false);
         })
         .catch((err) => {
           console.error("Resource Fetch Error:", err);
-        })
-        .finally(() => setLoading(false));
+          setLoading(false);
+        });
     }
   }, [id, isEditing, location.state]);
 
-  const handleChange = (field: string) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
@@ -108,10 +131,15 @@ export default function AdminEdit() {
 
     const url = isEditing ? `/api/resources/${id}` : `/api/resources`;
     const method = isEditing ? "PUT" : "POST";
+    const token = localStorage.getItem("admin_token");
 
     try {
       const response = await adminFetch(url, {
         method,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           ...formData,
           department_id: formData.department_id || null,
@@ -134,18 +162,24 @@ export default function AdminEdit() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-[#0F2E6A] font-bold">Loading resource...</p>
+      <div className="min-h-screen bg-gray-50">
+        <AdminNav />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#0F2E6A] font-bold">Loading resource...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <AdminNav />
+
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
         <Link
           to="/admin"
           className="flex items-center text-gray-500 hover:text-[#0F2E6A] mb-6 transition-colors text-sm font-semibold"
@@ -153,6 +187,7 @@ export default function AdminEdit() {
           <ChevronLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
 
+        {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-black text-[#0F2E6A]">
             {isEditing ? "Edit Resource" : "Add New Resource"}
@@ -163,6 +198,8 @@ export default function AdminEdit() {
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
+
+          {/* Categorization Card */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-2 mb-5 border-b pb-3">
               <LayoutGrid className="w-5 h-5 text-[#EDB920]" />
@@ -192,9 +229,7 @@ export default function AdminEdit() {
                 >
                   <option value="">— No Department Assigned —</option>
                   {departments.map((dept: any) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
                   ))}
                 </select>
               </div>
@@ -224,6 +259,7 @@ export default function AdminEdit() {
             </div>
           </div>
 
+          {/* Location Card */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center gap-2 mb-5 border-b pb-3">
               <MapPin className="w-5 h-5 text-[#EDB920]" />
@@ -293,13 +329,14 @@ export default function AdminEdit() {
             </div>
           </div>
 
+          {/* Action Footer */}
           <div className="mt-12 pt-8 border-t border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400 font-medium">
                 Ensure all required fields (Name, Description, Tags) are filled to publish.
               </p>
             </div>
-
+            
             <div className="flex items-center gap-4">
               <button
                 type="button"
@@ -308,7 +345,7 @@ export default function AdminEdit() {
               >
                 Cancel
               </button>
-
+              
               <button
                 type="submit"
                 disabled={saving}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { ChevronLeft, MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
+import { unwrapObject, unwrapList } from '../utils/resourceHelpers';
 
 interface Resource {
   id: number;
@@ -12,7 +13,8 @@ interface Resource {
   socials: string | null;
   hours: string | null;
   cta_link: string | null;
-  keywords: string | null;
+  keywords?: string | null;
+  tags?: string[] | null;
 }
 
 interface DepartmentData {
@@ -40,10 +42,15 @@ export default function DepartmentDetail() {
         if (!res.ok) throw new Error('Not found');
         return res.json();
       })
-      .then(json => { 
+      .then(json => {
         if (isMounted) {
-          setData(json); 
-          setLoading(false); 
+          const dept = unwrapObject<DepartmentData>(json);
+          if (dept) {
+            // Defend against `resources` itself being wrapped the same way
+            dept.resources = unwrapList<Resource>(dept.resources);
+          }
+          setData(dept);
+          setLoading(false);
         }
       })
       .catch(err => { 
