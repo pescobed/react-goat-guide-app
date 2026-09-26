@@ -173,7 +173,6 @@ export default function AdminSelect() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <AdminNav />
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-[#EDB920] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -196,8 +195,6 @@ export default function AdminSelect() {
           {toast.msg}
         </div>
       )}
-
-      <AdminNav />
 
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
