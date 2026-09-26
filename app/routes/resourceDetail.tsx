@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
-import { ChevronLeft, ExternalLink, Mail, MapPin, Phone, Globe, Clock } from 'lucide-react';
+import { ChevronLeft, ExternalLink, Mail, MapPin, Phone, Globe, Clock, Building2 } from 'lucide-react';
+import { unwrapObject, getResourceTags } from '../utils/resourceHelpers';
 
 interface Resource {
   id: number;
   resource_name: string;
   description: string;
   location: string | null;
-  keywords: string | null;
+  keywords?: string | null;
+  tags?: string[] | null;
   phone: string | null;
   email: string | null;
   socials: string | null;
   hours: string | null;
   cta_link: string | null;
   department_id: number | null;
+  department_name?: string | null;
 }
 
 const ResourceDetail: React.FC = () => {
@@ -34,7 +37,7 @@ const ResourceDetail: React.FC = () => {
       })
       .then((json) => {
         if (isSubscribed) {
-          setData(json);
+          setData(unwrapObject<Resource>(json));
           setLoading(false);
         }
         // Fire-and-forget view counter update safely
@@ -75,12 +78,25 @@ const ResourceDetail: React.FC = () => {
     );
   }
 
-  // Parse keywords into tag array
-  const tags = (data.keywords || '').split(',').map((k) => k.trim()).filter(Boolean);
+  // Read tags from whichever shape the API returned
+  const tags = getResourceTags(data);
 
   // Build contact info rows from whatever columns are populated
   const contactItems = [
-    data.location && { icon: MapPin, label: 'Location', value: data.location, link: undefined },
+    data.location && {
+      icon: MapPin,
+      label: 'Location',
+      value: data.location,
+      link: `/location/${encodeURIComponent(data.location)}`,
+      internal: true,
+    },
+    data.department_name && data.department_id && {
+      icon: Building2,
+      label: 'Department',
+      value: data.department_name,
+      link: `/department/${data.department_id}`,
+      internal: true,
+    },
     data.phone && { icon: Phone, label: 'Phone', value: data.phone, link: `tel:${data.phone}` },
     data.email && { icon: Mail, label: 'Email', value: data.email, link: `mailto:${data.email}` },
     data.socials && { 
@@ -90,7 +106,7 @@ const ResourceDetail: React.FC = () => {
       link: data.socials.startsWith('http') ? data.socials : `https://${data.socials}` 
     },
     data.hours && { icon: Clock, label: 'Hours', value: data.hours, link: undefined },
-  ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; link?: string }[];
+  ].filter(Boolean) as { icon: React.ElementType; label: string; value: string; link?: string; internal?: boolean }[];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased text-gray-900">
@@ -151,7 +167,14 @@ const ResourceDetail: React.FC = () => {
                       <item.icon className="w-4 h-4" />
                       {item.label}
                     </p>
-                    {item.link ? (
+                    {item.link && item.internal ? (
+                      <Link
+                        to={item.link}
+                        className="text-[#0F2E6A] hover:text-indigo-800 underline text-base font-medium break-all"
+                      >
+                        {item.value}
+                      </Link>
+                    ) : item.link ? (
                       <a 
                         href={item.link} 
                         target="_blank" 

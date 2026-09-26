@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { LayoutGrid, ChevronLeft, Search, MapPin } from 'lucide-react';
 import SearchBar from '../components/searchBar';
+import { unwrapList, getResourceTags } from '../utils/resourceHelpers';
 
 interface Resource {
   id: number;
   resource_name: string;
   description: string;
-  keywords: string | null;
+  keywords?: string | null;
+  tags?: string[] | null;
   location: string | null;
   view_count: number;
 }
@@ -27,9 +29,10 @@ export default function ResourcesIndex() {
   useEffect(() => {
     fetch('/api/resources')
       .then(res => res.json())
-      .then(data => {
+      .then(json => {
+        const list = unwrapList<Resource>(json);
         // Sort alphabetically by default
-        const sorted = [...data].sort((a, b) => {
+        const sorted = [...list].sort((a, b) => {
           const nameA = a.resource_name || "";
           const nameB = b.resource_name || "";
           return nameA.localeCompare(nameB);
@@ -44,8 +47,8 @@ export default function ResourcesIndex() {
     ? resources.filter(r =>
         r.resource_name?.toLowerCase().includes(search.toLowerCase()) ||
         r.description?.toLowerCase().includes(search.toLowerCase()) ||
-        r.keywords?.toLowerCase().includes(search.toLowerCase()) ||
-        r.location?.toLowerCase().includes(search.toLowerCase())
+        r.location?.toLowerCase().includes(search.toLowerCase()) ||
+        getResourceTags(r).some(tag => tag.toLowerCase().includes(search.toLowerCase()))
       )
     : resources;
 

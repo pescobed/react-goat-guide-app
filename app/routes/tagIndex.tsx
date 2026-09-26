@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Tag, Search, ChevronLeft, X } from 'lucide-react'; // Added X for clear button
+import { Tag, ChevronLeft } from 'lucide-react';
 import SearchBar from '../components/searchBar';
+import { unwrapList, getResourceTags } from '../utils/resourceHelpers';
 
 export default function TagsIndex() {
   const [tags, setTags] = useState<string[]>([]);
@@ -11,11 +12,16 @@ export default function TagsIndex() {
   useEffect(() => {
     fetch('/api/resources')
       .then(res => res.json())
-      .then(data => {
+      .then(json => {
+        const data = unwrapList<any>(json);
         const uniqueTags = Array.from(new Set(
-          data.flatMap((r: any) => (r.keywords || '').split(',').map((k: string) => k.trim()).filter(Boolean))
+          data.flatMap((r) => getResourceTags(r))
         )).sort() as string[];
         setTags(uniqueTags);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
         setLoading(false);
       });
   }, []);

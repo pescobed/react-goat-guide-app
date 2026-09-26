@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AdminNav from "../components/adminNav";
 import { adminFetch } from "../utils/api";
+import { unwrapList } from "../utils/resourceHelpers";
 
 type LocationEntry = {
   name: string;
@@ -43,17 +44,14 @@ const fetchData = () => {
     adminFetch("/api/resources").then((r) => r.json()),
   ])
     .then(([rawLocations, rawResources]) => {
-      // Unpack resources array safely
-      const resources: any[] = Array.isArray(rawResources) 
-        ? rawResources 
-        : (rawResources?.data || []);
+      // Unpack resources array safely — accepts a bare array or a
+      // { data: [...] } / { success, data: [...] } envelope either way.
+      const resources: any[] = unwrapList<any>(rawResources);
       
       setAllResources(resources);
 
-      // Extract raw locations array safely
-      const locationList: any[] = Array.isArray(rawLocations) 
-        ? rawLocations 
-        : (rawLocations?.data || []);
+      // Extract raw locations array safely, same treatment.
+      const locationList: any[] = unwrapList<any>(rawLocations);
 
       const entries: LocationEntry[] = locationList.map((locItem) => {
         // Support both plain string "Room 101" or location object { id: 1, name: "Room 101" }

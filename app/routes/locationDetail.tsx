@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { ChevronLeft, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { unwrapList } from '../utils/resourceHelpers';
 
 interface Resource {
   id: number;
@@ -22,13 +23,14 @@ export default function LocationDetail() {
     setLoading(true);
     fetch(`/api/resources`)
       .then(res => res.json())
-      .then(data => {
+      .then(json => {
+        const data = unwrapList<Resource>(json);
         let filtered;
         // Grouped filtering: If user clicked "Off-Campus", show all numeric addresses
         if (locationName === "Off-Campus") {
-          filtered = data.filter((r: Resource) => /^\d/.test(r.location || ''));
+          filtered = data.filter((r) => /^\d/.test(r.location || ''));
         } else {
-          filtered = data.filter((r: Resource) => r.location === locationName);
+          filtered = data.filter((r) => r.location === locationName);
         }
         setResources(filtered);
         setLoading(false);

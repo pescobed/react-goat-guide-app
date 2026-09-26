@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { Building2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import SearchBar from '../components/searchBar';
+import { unwrapList } from '../utils/resourceHelpers';
 
 interface Department {
   id: number;
@@ -24,11 +25,11 @@ export default function DepartmentsIndex() {
   useEffect(() => {
     fetch('/api/departments')
       .then(res => res.json())
-      .then(data => { setDepartments(data); setLoading(false); })
+      .then(json => { setDepartments(unwrapList<Department>(json)); setLoading(false); })
       .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
-  const filtered = (Array.isArray(departments) ? departments : []).filter(d =>
+  const filtered = departments.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase())
   );
 
