@@ -38,46 +38,56 @@ export default function AdminLocations() {
     setTimeout(() => setToast(null), 3000);
   };
 
-const fetchData = () => {
-  Promise.all([
-    adminFetch("/api/locations").then((r) => r.json()),
-    adminFetch("/api/resources").then((r) => r.json()),
-  ])
-    .then(([rawLocations, rawResources]) => {
-      // Unpack resources array safely — accepts a bare array or a
-      // { data: [...] } / { success, data: [...] } envelope either way.
-      const resources: any[] = unwrapList<any>(rawResources);
-      
-      setAllResources(resources);
+  const fetchData = () => {
+    Promise.all([
+      adminFetch("/api/locations").then((r) => r.json()),
+      adminFetch("/api/resources").then((r) => r.json()),
+    ])
+      .then(([rawLocations, rawResources]) => {
+        const resources: any[] = unwrapList<any>(rawResources);
+        setAllResources(resources);
 
-      // Extract raw locations array safely, same treatment.
-      const locationList: any[] = unwrapList<any>(rawLocations);
+        const buildingList: any[] = unwrapList<any>(rawLocations);
 
-      const entries: LocationEntry[] = locationList.map((locItem) => {
-        // Support both plain string "Room 101" or location object { id: 1, name: "Room 101" }
-        const locName = typeof locItem === "string" ? locItem : locItem.name;
+        // unique location/room names from buildings hierarchy
+        const locationNames = new Set<string>();
+        buildingList.forEach((b) => {
+          if (b.building_name) locationNames.add(b.building_name);
+          if (Array.isArray(b.rooms)) {
+            b.rooms.forEach((r: any) => {
+              if (r.name) locationNames.add(r.name);
+              if (r.room_number) locationNames.add(`${b.building_name} ${r.room_number}`);
+            });
+          }
+        });
 
-        const connectedResources = resources
-          .filter((r) => r.location === locName)
-          .map((r) => ({
-            id: r.id,
-            name: r.resource_name || "Untitled Resource",
-            fullResource: r,
-          }));
+        // include raw resource location strings as fallback
+        resources.forEach((r) => {
+          if (r.location?.trim()) locationNames.add(r.location.trim());
+        });
 
-        return {
-          name: locName,
-          resourceCount: connectedResources.length,
-          resources: connectedResources,
-        };
-      });
+        const entries: LocationEntry[] = Array.from(locationNames).map((locName) => {
+          const connectedResources = resources
+            .filter((r) => r.location === locName)
+            .map((r) => ({
+              id: r.id,
+              name: r.resource_name || "Untitled Resource",
+              fullResource: r,
+            }));
 
-      entries.sort((a, b) => b.resourceCount - a.resourceCount);
-      setLocationEntries(entries);
-    })
-    .catch(() => setError("Failed to load location data."))
-    .finally(() => setLoading(false));
-};
+          return {
+            name: locName,
+            resourceCount: connectedResources.length,
+            resources: connectedResources,
+          };
+        });
+
+        entries.sort((a, b) => b.resourceCount - a.resourceCount);
+        setLocationEntries(entries);
+      })
+      .catch(() => setError("Failed to load location data."))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => { fetchData(); }, []);
 

@@ -143,6 +143,7 @@ export default function AdminEdit() {
         body: JSON.stringify({
           ...formData,
           department_id: formData.department_id || null,
+          tags: formData.keywords.split(',').map(t => t.trim()).filter(Boolean)
         }),
       });
 

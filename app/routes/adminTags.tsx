@@ -39,12 +39,11 @@ export default function AdminTags() {
   };
 
   const getTagsFromResource = (resource: any): string[] => {
-    const raw = resource.keywords || resource.tags || "";
-    if (Array.isArray(raw)) return raw.map((t) => String(t).trim()).filter(Boolean);
-    return String(raw)
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+    if (Array.isArray(resource.tags)) return resource.tags;
+    if (typeof resource.keywords === 'string') {
+      return resource.keywords.split(',').map((t: string) => t.trim()).filter(Boolean);
+    }
+    return [];
   };
 
   const fetchData = () => {
