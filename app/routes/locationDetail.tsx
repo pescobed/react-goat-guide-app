@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { ChevronLeft, MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock } from 'lucide-react';
 import { unwrapList } from '../utils/resourceHelpers';
 
 interface Resource {
@@ -14,25 +14,18 @@ interface Resource {
 }
 
 export default function LocationDetail() {
-  const { locationName } = useParams();
+  const { locationName } = useParams(); // Contains building ID or building name
   const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/resources`)
+    fetch(`/api/locations/${locationName}/resources`)
       .then(res => res.json())
       .then(json => {
         const data = unwrapList<Resource>(json);
-        let filtered;
-        // Grouped filtering: If user clicked "Off-Campus", show all numeric addresses
-        if (locationName === "Off-Campus") {
-          filtered = data.filter((r) => /^\d/.test(r.location || ''));
-        } else {
-          filtered = data.filter((r) => r.location === locationName);
-        }
-        setResources(filtered);
+        setResources(data);
         setLoading(false);
       })
       .catch(err => {
@@ -47,32 +40,41 @@ export default function LocationDetail() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <button className="flex items-center text-gray-300 hover:text-white mb-6" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-5 h-5 mr-1" />
-            <span className="text-lg">Back</span>
+            <span className="text-lg font-medium">Back to Locations</span>
           </button>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-[#EDB920] rounded-lg text-[#0F2E6A]">
               <MapPin className="w-8 h-8" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{locationName}</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Building Details</h1>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resources.map((resource) => (
-            <Link key={resource.id} to={`/resource/${resource.id}`} className="block h-full group">
-              <div className="bg-[#192E56] p-6 rounded-xl shadow-lg text-white border border-transparent group-hover:border-[#EDB920] transition-all h-full flex flex-col">
-                <h3 className="text-xl font-bold mb-2">{resource.resource_name}</h3>
-                <p className="text-sm text-gray-300 line-clamp-3 mb-4 grow">{resource.description}</p>
-                <div className="text-xs text-gray-400 space-y-1">
-                    {resource.location && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {resource.location}</p>}
-                    {resource.hours && <p className="flex items-center gap-1"><Clock className="w-3 h-3" /> {resource.hours}</p>}
+        {loading ? (
+          <div className="text-center py-20 text-gray-500 animate-pulse">Loading resources...</div>
+        ) : resources.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+            <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-xl text-gray-500">No resources assigned to this location yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resources.map((resource) => (
+              <Link key={resource.id} to={`/resource/${resource.id}`} className="block h-full group">
+                <div className="bg-[#192E56] p-6 rounded-xl shadow-lg text-white border border-transparent group-hover:border-[#EDB920] transition-all h-full flex flex-col">
+                  <h3 className="text-xl font-bold mb-2">{resource.resource_name}</h3>
+                  <p className="text-sm text-gray-300 line-clamp-3 mb-4 grow">{resource.description}</p>
+                  <div className="text-xs text-gray-400 space-y-1">
+                      {resource.location && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {resource.location}</p>}
+                      {resource.hours && <p className="flex items-center gap-1"><Clock className="w-3 h-3" /> {resource.hours}</p>}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
